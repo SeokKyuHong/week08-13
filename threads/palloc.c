@@ -297,6 +297,7 @@ palloc_get_page (enum palloc_flags flags) {
 }
 
 /* Frees the PAGE_CNT pages starting at PAGES. */
+/* PAGES에서 시작하는 PAGE_CNT 페이지를 해제합니다. */
 void
 palloc_free_multiple (void *pages, size_t page_cnt) {
 	struct pool *pool;
@@ -322,7 +323,7 @@ palloc_free_multiple (void *pages, size_t page_cnt) {
 	bitmap_set_multiple (pool->used_map, page_idx, page_cnt, false);
 }
 
-/* Frees the page at PAGE. */
+/* PAGE에서 페이지를 해제합니다. */
 void
 palloc_free_page (void *page) {
 	palloc_free_multiple (page, 1);

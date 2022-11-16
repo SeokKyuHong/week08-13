@@ -11,6 +11,7 @@
 
 /* Halts the OS, printing the source file name, line number, and
  * function name, plus a user-specific message. */
+/* OS를 중지하고 소스 파일 이름, 줄 번호, 함수 이름 및 사용자별 메시지를 인쇄합니다. */
 #define PANIC(...) debug_panic (__FILE__, __LINE__, __func__, __VA_ARGS__)
 
 void debug_panic (const char *file, int line, const char *function,
@@ -25,8 +26,11 @@ void debug_backtrace (void);
  * included multiple times with different settings of NDEBUG. */
 #undef ASSERT
 #undef NOT_REACHED
-
-#ifndef NDEBUG
+/*디버그 모드가 아닌 경우(릴리즈모드)를 말한다.
+ #ifndef 는 뒤 매크로가 정의되어 있지 않았을때 실행된다.*/
+#ifndef NDEBUG 
+/*정해진 조건이 맞지 않을때 중단한다. 
+ True일때만 넘어가고 false면 중단*/
 #define ASSERT(CONDITION)                                       \
 	if ((CONDITION)) { } else {                             \
 		PANIC ("assertion `%s' failed.", #CONDITION);   \

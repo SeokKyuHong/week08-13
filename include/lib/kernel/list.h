@@ -1,14 +1,12 @@
 #ifndef __LIB_KERNEL_LIST_H
 #define __LIB_KERNEL_LIST_H
 
-/* Doubly linked list.
+/* 이중 연결 목록.
  *
- * This implementation of a doubly linked list does not require
- * use of dynamically allocated memory.  Instead, each structure
- * that is a potential list element must embed a struct list_elem
- * member.  All of the list functions operate on these `struct
- * list_elem's.  The list_entry macro allows conversion from a
- * struct list_elem back to a structure object that contains it.
+ * 이중 연결 목록의 이 구현은 동적으로 할당된 메모리를 사용할 필요가 없습니다.
+ * 대신, 잠재적인 목록 요소인 각 구조는 struct list_elem 멤버를 포함해야 합니다.
+ * 모든 목록 함수는 이러한 `struct list_elem'에서 작동합니다. list_entry 매크로를 사용하면 
+ * list_elem 구조체에서 이를 포함하는 구조체 개체로 다시 변환할 수 있습니다.
 
  * For example, suppose there is a needed for a list of `struct
  * foo'.  `struct foo' should contain a `struct list_elem'
@@ -100,6 +98,8 @@ struct list {
    name of the outer structure STRUCT and the member name MEMBER
    of the list element.  See the big comment at the top of the
    file for an example. */
+/* 목록 요소 LIST_ELEM에 대한 포인터를 LIST_ELEM이 내부에 포함된 구조에 대한 포인터로 변환합니다.
+외부 구조 STRUCT의 이름과 목록 요소의 멤버 이름 MEMBER를 제공하십시오. 예제는 파일 상단에 있는 큰 주석을 참조하십시오. */
 #define list_entry(LIST_ELEM, STRUCT, MEMBER)           \
 	((STRUCT *) ((uint8_t *) &(LIST_ELEM)->next     \
 		- offsetof (STRUCT, MEMBER.next)))
@@ -107,6 +107,8 @@ struct list {
 void list_init (struct list *);
 
 /* List traversal. */
+struct list_elem *e;
+
 struct list_elem *list_begin (struct list *);
 struct list_elem *list_next (struct list_elem *);
 struct list_elem *list_end (struct list *);
@@ -141,9 +143,8 @@ bool list_empty (struct list *);
 /* Miscellaneous. */
 void list_reverse (struct list *);
 
-/* Compares the value of two list elements A and B, given
-   auxiliary data AUX.  Returns true if A is less than B, or
-   false if A is greater than or equal to B. */
+/* 주어진 보조 데이터 AUX에서 두 목록 요소 A와 B의 값을 비교합니다. 
+A가 B보다 작으면 true를 반환하고, A가 B보다 크거나 같으면 false를 반환합니다. */
 typedef bool list_less_func (const struct list_elem *a,
                              const struct list_elem *b,
                              void *aux);

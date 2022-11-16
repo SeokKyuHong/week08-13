@@ -18,6 +18,7 @@
 #endif
 
 /* Number of timer ticks since OS booted. */
+/* OS 부팅 이후 타이머 틱 수. */
 static int64_t ticks;
 
 /* Number of loops per timer tick.
@@ -32,6 +33,7 @@ static void real_time_sleep (int64_t num, int32_t denom);
 /* Sets up the 8254 Programmable Interval Timer (PIT) to
    interrupt PIT_FREQ times per second, and registers the
    corresponding interrupt. */
+/* 초당 PIT_FREQ 횟수를 인터럽트하도록 8254 PIT(Programmable Interval Timer)를 설정하고 해당 인터럽트를 등록합니다. */
 void
 timer_init (void) {
 	/* 8254 input frequency divided by TIMER_FREQ, rounded to
@@ -46,6 +48,7 @@ timer_init (void) {
 }
 
 /* Calibrates loops_per_tick, used to implement brief delays. */
+/* 짧은 지연을 구현하는 데 사용되는 loops_per_tick을 보정합니다. */
 void
 timer_calibrate (void) {
 	unsigned high_bit, test_bit;
@@ -71,6 +74,7 @@ timer_calibrate (void) {
 }
 
 /* Returns the number of timer ticks since the OS booted. */
+/* OS 부팅 이후 타이머 틱 수를 반환합니다. */
 int64_t
 timer_ticks (void) {
 	enum intr_level old_level = intr_disable ();
@@ -82,60 +86,74 @@ timer_ticks (void) {
 
 /* Returns the number of timer ticks elapsed since THEN, which
    should be a value once returned by timer_ticks(). */
+/* THEN 이후 경과된 타이머 틱 수를 반환합니다. 이 값은 한 번 timer_ticks()에 의해 반환된 값이어야 합니다. */
 int64_t
 timer_elapsed (int64_t then) {
 	return timer_ticks () - then;
 }
 
 /* Suspends execution for approximately TICKS timer ticks. */
+/*대략 TICKS 타이머 틱 동안 실행을 일시 중단합니다.*/
 void
 timer_sleep (int64_t ticks) {
-	int64_t start = timer_ticks ();
+	int64_t start = timer_ticks (); //ticks값을 반환 함
 
-	ASSERT (intr_get_level () == INTR_ON);
-	while (timer_elapsed (start) < ticks)
-		thread_yield ();
+	ASSERT (intr_get_level () == INTR_ON); 
+	// while (timer_elapsed (start) < ticks)
+	// 	thread_yield (); // 
+
+    
+	thread_sleep(start + ticks);
 }
 
 /* Suspends execution for approximately MS milliseconds. */
+/*약 MS 밀리초 동안 실행을 일시 중단합니다.*/
 void
 timer_msleep (int64_t ms) {
 	real_time_sleep (ms, 1000);
 }
 
 /* Suspends execution for approximately US microseconds. */
+/* 약 US 마이크로초 동안 실행을 일시 중단합니다. */
 void
 timer_usleep (int64_t us) {
 	real_time_sleep (us, 1000 * 1000);
 }
 
 /* Suspends execution for approximately NS nanoseconds. */
+/* 약 NS 마이크로초 동안 실행을 일시 중단합니다. */
 void
 timer_nsleep (int64_t ns) {
 	real_time_sleep (ns, 1000 * 1000 * 1000);
 }
 
 /* Prints timer statistics. */
+/* 타이머 통계를 출력합니다. */
 void
 timer_print_stats (void) {
 	printf ("Timer: %"PRId64" ticks\n", timer_ticks ());
 }
 
 /* Timer interrupt handler. */
+/*매 tick마다 ticks라는 변수를 증가 시켜 시간을 잰다. 
+이렇게 증가한 ticks가 TIME_SLICE 보다 커지는 순간에 intr_yield_on_return() 실행
+즉 일정 시간 마다 자동으로 scheduling이 발생*/
 static void
 timer_interrupt (struct intr_frame *args UNUSED) {
 	ticks++;
-	thread_tick ();
+	thread_tick (); //sleep queue에서 깨어날 thread가 있는 확인
+	thread_awake (ticks);//ticks가 증가 할때 마다 확인해서 깨우기
 }
 
 /* Returns true if LOOPS iterations waits for more than one timer
    tick, otherwise false. */
+/*while문을 통해 ticks가 흘러가게 하여 시간을 재는 용도로 이용*/
 static bool
 too_many_loops (unsigned loops) {
 	/* Wait for a timer tick. */
 	int64_t start = ticks;
 	while (ticks == start)
-		barrier ();
+		barrier ();			//이게 없다면 컴파일러가 무한루프로 인식함
 
 	/* Run LOOPS loops. */
 	start = ticks;
@@ -160,9 +178,11 @@ busy_wait (int64_t loops) {
 }
 
 /* Sleep for approximately NUM/DENOM seconds. */
+/* 약 NUM/DENO초 동안 절전 모드로 전환합니다. */
 static void
 real_time_sleep (int64_t num, int32_t denom) {
 	/* Convert NUM/DENOM seconds into timer ticks, rounding down.
+	   NUM/DENOM 초를 타이머 틱으로 변환하여 반올림합니다.
 
 	   (NUM / DENOM) s
 	   ---------------------- = NUM * TIMER_FREQ / DENOM ticks.

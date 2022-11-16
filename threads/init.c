@@ -71,21 +71,27 @@ main (void) {
 	char **argv;
 
 	/* Clear BSS and get machine's RAM size. */
+	/*메모리 할당 가져오기 및 초기화*/ // 데이터 세그먼트
 	bss_init ();
 
 	/* Break command line into arguments and parse options. */
-	argv = read_command_line ();
-	argv = parse_options (argv);
+	argv = read_command_line (); //kernel command line을 읽어와서 arguments로 나눈다.
+	argv = parse_options (argv); //command line에서 options을 읽어 온다.
+	//argv : 69339208
 
 	/* Initialize ourselves as a thread so we can use locks,
 	   then enable console locking. */
-	thread_init ();
-	console_init ();
+	/* 잠금을 사용할 수 있도록 자신을 스레드로 초기화합니다.
+	그런 다음 콘솔 잠금을 활성화하십시오. */
+	thread_init (); 	// 스레드 시스템 초기화
+	console_init (); 	// 콘솔 초기화 -> 콘솔 초기화 이후에는 printf()를 사용 가능 
 
 	/* Initialize memory system. */
-	mem_end = palloc_init ();
-	malloc_init ();
-	paging_init (mem_end);
+	/* 메모리 시스템을 초기화합니다. */
+	mem_end = palloc_init ();	// page allocator 설정
+	//mem_end : 268304384
+	malloc_init ();				// 사용자 메모리 할당(malloc)이 가능하게 설정
+	paging_init (mem_end);		// loader.S 에서 구성했던 페이지 테이블을 다시 구성
 
 #ifdef USERPROG
 	tss_init ();
@@ -102,14 +108,14 @@ main (void) {
 	syscall_init ();
 #endif
 	/* Start thread scheduler and enable interrupts. */
-	thread_start ();
-	serial_init_queue ();
-	timer_calibrate ();
+	thread_start ();		//우선 가장 실행 우선순위가 낮은 idle 이라는 thread를 생성하여 동작 시키고 인터럽트를 활성화시킨다. 
+	serial_init_queue ();	//시리얼로부터 인터럽트를 받아 커널을 제어할 수 있도록 한다.
+	timer_calibrate ();		//정확한 시간 측정을 위해 timer를 보정한다.  
 
 #ifdef FILESYS
 	/* Initialize file system. */
 	disk_init ();
-	filesys_init (format_filesys);
+	filesys_init (format_filesys); //파일 시스템 초기화
 #endif
 
 #ifdef VM
@@ -137,7 +143,7 @@ bss_init (void) {
 	   The start and end of the BSS segment is recorded by the
 	   linker as _start_bss and _end_bss.  See kernel.lds. */
 	extern char _start_bss, _end_bss;
-	memset (&_start_bss, 0, &_end_bss - &_start_bss);
+	memset (&_start_bss, 0, &_end_bss - &_start_bss); //초기화
 }
 
 /* Populates the page table with the kernel virtual mapping,

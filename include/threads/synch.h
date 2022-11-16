@@ -7,7 +7,7 @@
 /* A counting semaphore. */
 struct semaphore {
 	unsigned value;             /* Current value. */
-	struct list waiters;        /* List of waiting threads. */
+	struct list waiters;        /* 대기 중인 스레드 목록. */
 };
 
 void sema_init (struct semaphore *, unsigned value);
@@ -18,8 +18,8 @@ void sema_self_test (void);
 
 /* Lock. */
 struct lock {
-	struct thread *holder;      /* Thread holding lock (for debugging). */
-	struct semaphore semaphore; /* Binary semaphore controlling access. */
+	struct thread *holder;      /* 스레드 보유 잠금(디버깅용). */
+	struct semaphore semaphore; /* 접근을 제어하는 바이너리 세마포어. */
 };
 
 void lock_init (struct lock *);
@@ -37,6 +37,10 @@ void cond_init (struct condition *);
 void cond_wait (struct condition *, struct lock *);
 void cond_signal (struct condition *, struct lock *);
 void cond_broadcast (struct condition *, struct lock *);
+
+bool sema_more(const struct list_elem *a, const struct list_elem *b, void *aux);
+bool lock_more(const struct list_elem *a, const struct list_elem *b, void *aux);
+
 
 /* Optimization barrier.
  *

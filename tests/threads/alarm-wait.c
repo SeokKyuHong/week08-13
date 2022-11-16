@@ -1,6 +1,7 @@
 /* Creates N threads, each of which sleeps a different, fixed
    duration, M times.  Records the wake-up order and verifies
    that it is valid. */
+/* N개의 스레드를 생성하며, 각 스레드는 서로 다른 고정 지속 시간을 M번 잠자기 상태로 만듭니다. 깨우기 순서를 기록하고 유효한지 확인합니다. */
 
 #include <stdio.h>
 #include "tests/threads/tests.h"
