@@ -98,6 +98,8 @@ struct thread {
 	struct lock *wait_lock;		//대기하고 있는 lock 자료구조
 	struct list dona;			//multiple 고려
 	struct list_elem dona_elem; //multiple 고려
+
+	uint64_t pml4;
 	
 
 #ifdef USERPROG

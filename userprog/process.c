@@ -28,6 +28,7 @@ static void initd (void *f_name);
 static void __do_fork (void *);
 
 /* General process initializer for initd and other process. */
+/* initd 및 기타 프로세스를 위한 일반 프로세스 초기화. */
 static void
 process_init (void) {
 	struct thread *current = thread_current ();
@@ -38,6 +39,10 @@ process_init (void) {
  * before process_create_initd() returns. Returns the initd's
  * thread id, or TID_ERROR if the thread cannot be created.
  * Notice that THIS SHOULD BE CALLED ONCE. */
+/* FILE_NAME에서 로드된 "initd"라는 첫 번째 사용자 영역 프로그램을 시작합니다.
+process_create_initd()가 반환되기 전에 새 스레드가 예약될 수 있으며 종료될 수도 있습니다.
+initd의 스레드 ID를 반환하거나 스레드를 생성할 수 없는 경우 TID_ERROR를 반환합니다.
+이것은 한 번만 호출되어야 합니다. */
 tid_t
 process_create_initd (const char *file_name) {
 	char *fn_copy;
@@ -45,12 +50,15 @@ process_create_initd (const char *file_name) {
 
 	/* Make a copy of FILE_NAME.
 	 * Otherwise there's a race between the caller and load(). */
+	/* FILE_NAME의 복사본을 만듭니다.
+	 그렇지 않으면 호출자와 load() 사이에 경쟁이 있습니다. */
 	fn_copy = palloc_get_page (0);
 	if (fn_copy == NULL)
 		return TID_ERROR;
-	strlcpy (fn_copy, file_name, PGSIZE);
+	strlcpy (fn_copy, file_name, PGSIZE); 			// 2번을 1번으로 3번의 사이즈만큼 복사
 
 	/* Create a new thread to execute FILE_NAME. */
+	/* FILE_NAME을 실행할 새 스레드를 만듭니다. */
 	tid = thread_create (file_name, PRI_DEFAULT, initd, fn_copy);
 	if (tid == TID_ERROR)
 		palloc_free_page (fn_copy);
@@ -58,6 +66,7 @@ process_create_initd (const char *file_name) {
 }
 
 /* A thread function that launches first user process. */
+/* 첫 번째 사용자 프로세스를 시작하는 스레드 함수. */
 static void
 initd (void *f_name) {
 #ifdef VM
@@ -83,6 +92,8 @@ process_fork (const char *name, struct intr_frame *if_ UNUSED) {
 #ifndef VM
 /* Duplicate the parent's address space by passing this function to the
  * pml4_for_each. This is only for the project 2. */
+/* 이 함수를 pml4_for_each에 전달하여 부모의 주소 공간을 복제합니다.
+이것은 프로젝트 2에만 해당됩니다. */
 static bool
 duplicate_pte (uint64_t *pte, void *va, void *aux) {
 	struct thread *current = thread_current ();
@@ -92,16 +103,20 @@ duplicate_pte (uint64_t *pte, void *va, void *aux) {
 	bool writable;
 
 	/* 1. TODO: If the parent_page is kernel page, then return immediately. */
+	/* parent_page가 커널 페이지이면 즉시 반환합니다. */
 
 	/* 2. Resolve VA from the parent's page map level 4. */
+	/* 2. 부모의 페이지 맵 레벨 4에서 VA를 해결합니다. */
 	parent_page = pml4_get_page (parent->pml4, va);
 
 	/* 3. TODO: Allocate new PAL_USER page for the child and set result to
-	 *    TODO: NEWPAGE. */
+				자식에 대해 새 PAL_USER 페이지를 할당하고 결과를 NEWPAGE로 설정합니다.
+	*/
 
 	/* 4. TODO: Duplicate parent's page to the new page and
 	 *    TODO: check whether parent's page is writable or not (set WRITABLE
-	 *    TODO: according to the result). */
+	 *    TODO: according to the result). 
+	 * 	  부모 페이지를 새 페이지에 복제하고 부모 페이지가 쓰기 가능한지 여부를 확인합니다(결과에 따라 WRITABLE 설정). */
 
 	/* 5. Add new page to child's page table at address VA with WRITABLE
 	 *    permission. */
@@ -116,6 +131,9 @@ duplicate_pte (uint64_t *pte, void *va, void *aux) {
  * Hint) parent->tf does not hold the userland context of the process.
  *       That is, you are required to pass second argument of process_fork to
  *       this function. */
+/* 부모의 실행 컨텍스트를 복사하는 스레드 함수.
+  * 힌트) parent->tf는 프로세스의 사용자 영역 컨텍스트를 보유하지 않습니다.
+  * 즉, 이 함수에 process_fork의 두 번째 인수를 전달해야 합니다. */
 static void
 __do_fork (void *aux) {
 	struct intr_frame if_;
@@ -160,14 +178,18 @@ error:
 
 /* Switch the current execution context to the f_name.
  * Returns -1 on fail. */
+/* current execution 컨텍스트(행위)를 f_name으로 전환합니다.
+  * 실패 시 -1을 반환합니다. */
 int
-process_exec (void *f_name) {
+process_exec (void *f_name) { 				//실행함수
 	char *file_name = f_name;
 	bool success;
 
 	/* We cannot use the intr_frame in the thread structure.
 	 * This is because when current thread rescheduled,
 	 * it stores the execution information to the member. */
+	/* 스레드 구조에서 intr_frame을 사용할 수 없습니다.
+	* 현재 쓰레드가 recheduled 될 때 멤버에게 실행 정보를 저장하기 때문이다. */
 	struct intr_frame _if;
 	_if.ds = _if.es = _if.ss = SEL_UDSEG;
 	_if.cs = SEL_UCSEG;
