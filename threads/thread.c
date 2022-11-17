@@ -86,7 +86,6 @@ static void do_schedule(int status);
 static void schedule (void);
 static tid_t allocate_tid (void);
 bool more(const struct list_elem *a, const struct list_elem *b, void *aux);
-bool lock_more(const struct list_elem *a, const struct list_elem *b, void *aux);
 void thread_comp_ready(void);
 
 void thread_comp_dona(void);
@@ -206,14 +205,6 @@ more(const struct list_elem *a, const struct list_elem *b, void *aux){
 	return list_entry (a, struct thread, elem) -> priority
 			> list_entry (b, struct thread, elem) -> priority;
 }
-
-bool
-lock_more(const struct list_elem *a, const struct list_elem *b, void *aux){
-	return list_entry (a, struct thread, dona_elem) -> priority
-		> list_entry (b, struct thread, dona_elem) -> priority;
-
-}
-
 
 /* Starts preemptive thread scheduling by enabling interrupts.
    Also creates the idle thread. */
@@ -609,9 +600,6 @@ dona_priority(void){
 void 
 remove_with_lock(struct lock *lock){
 	struct thread *t = thread_current();
-	// if (&t->dona == NULL){ // list에 아무것도 없을때 
-	// 	list_remove (&t->dona_elem);
-	// }
 	struct list_elem *temp;
 	for (temp =list_begin (&t->dona); list_end (&t->dona) != temp; temp = list_next (temp)){
 		struct thread *t_t = list_entry(temp, struct thread, dona_elem);
@@ -632,7 +620,7 @@ refresh_priority(void){
 	// 가장 우선순위가 높은 dona리스트의 스레드와 현재 스레드의 우선순위를 비교하여 높은 값을 현재 스레드의 우선순위로 설정한다.
 	if (!list_empty(&t->dona)){
 
-		list_sort(&t->dona, lock_more, 0);
+		list_sort(&t->dona, more, 0);
 		
 		struct thread *temp = list_entry (list_front (&t->dona), struct thread, dona_elem);
 		
@@ -640,7 +628,6 @@ refresh_priority(void){
 			t->priority = temp ->priority;
 		}
 	}
-
 }
 
 /* Chooses and returns the next thread to be scheduled.  Should

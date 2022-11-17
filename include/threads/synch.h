@@ -18,7 +18,7 @@ void sema_self_test (void);
 
 /* Lock. */
 struct lock {
-	struct thread *holder;      /* 스레드 보유 잠금(디버깅용). */
+	struct thread *holder;      /* 락을 보유 하고 있는 스레드. */
 	struct semaphore semaphore; /* 접근을 제어하는 바이너리 세마포어. */
 };
 

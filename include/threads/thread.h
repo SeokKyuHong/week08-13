@@ -151,7 +151,7 @@ int thread_get_load_avg (void);
 
 void do_iret (struct intr_frame *tf);
 bool more(const struct list_elem *a, const struct list_elem *b, void *aux);
-bool lock_more(const struct list_elem *a, const struct list_elem *b, void *aux);
+// bool lock_more(const struct list_elem *a, const struct list_elem *b, void *aux);
 
 void thread_comp_ready(void);
 

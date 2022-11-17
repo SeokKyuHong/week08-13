@@ -116,7 +116,6 @@ sema_up (struct semaphore *sema) {
 
 	old_level = intr_disable ();
 
-	// sema->value++;
 	if (!list_empty (&sema->waiters))
 	{
 		list_sort (&sema->waiters, more, 0); // 솔트 추가한거
@@ -125,7 +124,7 @@ sema_up (struct semaphore *sema) {
 					struct thread, elem));
 	}
 	sema->value++;	
-	thread_comp_ready();
+	thread_comp_ready();   		//실행 되기전 스캐쥴링을 위해 
 
 	intr_set_level (old_level);
 }
@@ -202,12 +201,12 @@ lock_acquire (struct lock *lock) {
 	struct thread *t = thread_current();
 
 	/*done 시작*/
-	if (lock -> holder){
-		t -> wait_lock = lock;
+	if (lock -> holder){				//lock의 holder가 있는 경우
+		t -> wait_lock = lock;			//해당 lock을 스레드의 wait_lock으로 저장
 
-		list_insert_ordered (&lock->holder->dona, &t->dona_elem, lock_more, 0);
-		// printf("lock_acquire들어가서 dona_priority로 잘 가니?\n");
-		dona_priority();
+		//해당 lock을 갖고 있던 스래드의 도네이션 리스트에 t스레드를 넣는다. 
+		list_insert_ordered (&lock->holder->dona, &t->dona_elem, more, 0);
+		dona_priority();				//도네이션 시작!
 	}
 	
 	sema_down (&lock->semaphore);
@@ -243,8 +242,8 @@ lock_release (struct lock *lock) {
 
 	lock->holder = NULL;
 
-	remove_with_lock(lock);
-	refresh_priority();
+	remove_with_lock(lock);       //donaion 리스트에서 내 락을 원하는 스레드 삭제
+	refresh_priority();           //priority 되돌리기
 
 	sema_up (&lock->semaphore);
 }
@@ -317,7 +316,7 @@ cond_wait (struct condition *cond, struct lock *lock) {
 
 	sema_init (&waiter.semaphore, 0);
 	// list_push_back (&cond->waiters, &waiter.elem);
-	list_insert_ordered (&cond->waiters, &waiter.elem, sema_more, 0);
+	list_insert_ordered (&cond->waiters, &waiter.elem , sema_more, 0);
 	lock_release (lock);
 	sema_down (&waiter.semaphore);
 	lock_acquire (lock);
