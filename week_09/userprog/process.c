@@ -43,8 +43,9 @@ process_init (void) {
 process_create_initd()가 반환되기 전에 새 스레드가 예약될 수 있으며 종료될 수도 있습니다.
 initd의 스레드 ID를 반환하거나 스레드를 생성할 수 없는 경우 TID_ERROR를 반환합니다.
 이것은 한 번만 호출되어야 합니다. */
+//grep foo bar -> foo랑 bar를 전달하여 grep를 실행
 tid_t
-process_create_initd (const char *file_name) {
+process_create_initd (const char *file_name) { 
 	char *fn_copy;
 	tid_t tid;
 
@@ -195,6 +196,17 @@ process_exec (void *f_name) { 				//실행함수
 	_if.cs = SEL_UCSEG;
 	_if.eflags = FLAG_IF | FLAG_MBS;
 
+
+	printf("뭐임?%s\n", f_name);
+	// strtok_r(f_name);
+
+	//thread_create를 호출한다.
+	//하기전에 strtok-r로 토큰화 한다
+	//토큰화 한걸 thread_create의 인자로 넣는다.
+
+	//start_process(f_name) 호출(원래 인자)
+	//		이 안에서 load가 호출 이때 인자도 f_name
+
 	/* We first kill the current context */
 	process_cleanup ();
 
@@ -242,6 +254,7 @@ process_exit (void) {
 }
 
 /* Free the current process's resources. */
+/* 현재 프로세스의 리소스를 해제합니다. */
 static void
 process_cleanup (void) {
 	struct thread *curr = thread_current ();
@@ -253,6 +266,7 @@ process_cleanup (void) {
 	uint64_t *pml4;
 	/* Destroy the current process's page directory and switch back
 	 * to the kernel-only page directory. */
+	/* 현재 프로세스의 페이지 디렉토리를 파괴하고 커널 전용 페이지 디렉토리로 다시 전환합니다. */
 	pml4 = curr->pml4;
 	if (pml4 != NULL) {
 		/* Correct ordering here is crucial.  We must set
@@ -342,6 +356,9 @@ static bool load_segment (struct file *file, off_t ofs, uint8_t *upage,
  * Stores the executable's entry point into *RIP
  * and its initial stack pointer into *RSP.
  * Returns true if successful, false otherwise. */
+/* FILE_NAME에서 현재 스레드로 ELF 실행 파일을 로드합니다.
+  * 실행 파일의 진입점을 *RIP에 저장하고 초기 스택 포인터를 *RSP에 저장합니다.
+  * 성공하면 true, 그렇지 않으면 false를 반환합니다. */
 static bool
 load (const char *file_name, struct intr_frame *if_) {
 	struct thread *t = thread_current ();

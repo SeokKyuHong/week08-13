@@ -99,7 +99,7 @@ struct thread {
 	struct list dona;			//multiple 고려
 	struct list_elem dona_elem; //multiple 고려
 
-	uint64_t pml4;
+	// uint64_t pml4;
 	
 
 #ifdef USERPROG

@@ -124,7 +124,7 @@ main (void) {
 
 	printf ("Boot complete.\n");
 
-	/* Run actions specified on kernel command line. */
+	/* 커널 명령줄에 지정된 작업을 실행합니다. */
 	run_actions (argv);
 
 	/* Finish up. */
@@ -241,6 +241,7 @@ parse_options (char **argv) {
 }
 
 /* Runs the task specified in ARGV[1]. */
+/* ARGV[1]에 지정된 작업을 실행합니다. */
 static void
 run_task (char **argv) {
 	const char *task = argv[1];
@@ -260,6 +261,7 @@ run_task (char **argv) {
 
 /* Executes all of the actions specified in ARGV[]
    up to the null pointer sentinel. */
+/* 널 포인터 센티넬까지 ARGV[]에 지정된 모든 작업을 실행합니다. */
 static void
 run_actions (char **argv) {
 	/* An action. */

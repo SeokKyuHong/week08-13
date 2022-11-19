@@ -191,6 +191,10 @@ strstr (const char *haystack, const char *needle) {
    track of the tokenizer's position.  The return value each time
    is the next token in the string, or a null pointer if no
    tokens remain.
+   문자열을 DELIMITERS로 구분된 토큰으로 나눕니다.
+   이 함수가 처음 호출될 때 S는 토큰화할 문자열이어야 하고 후속 호출에서는 널 포인터여야 합니다.
+   SAVE_PTR은 토크나이저의 위치를 추적하는 데 사용되는 `char *' 변수의 주소입니다.
+   매번 반환 값은 문자열의 다음 토큰이거나 토큰이 남아 있지 않으면 null 포인터입니다.
 
    This function treats multiple adjacent delimiters as a single
    delimiter.  The returned tokens will never be length 0.
@@ -217,6 +221,9 @@ outputs:
 'to'
 'tokenize.'
 */
+/* s는 분리하고자 하는 문자열, delimiters는 구분자(무엇을 기준으로 분리할것인가). 여기에서 분리자를 공백으로 줘야 한다.
+    save_ptr은 함수 내에서 토큰이 추출된 뒤 남은 녀석을 가리키기 위한 것이다. 
+    즉 strtok_r의 리턴은 s의 가장 앞에 있는 녀석이고, 이후 두번째 녀석에 접근하고 싶다면 두 번째 strtok 호출 전 s = save_ptr 해줘야 한다 */
 char *
 strtok_r (char *s, const char *delimiters, char **save_ptr) {
 	char *token;
@@ -231,10 +238,9 @@ strtok_r (char *s, const char *delimiters, char **save_ptr) {
 	ASSERT (s != NULL);
 
 	/* Skip any DELIMITERS at our current position. */
-	while (strchr (delimiters, *s) != NULL) {
-		/* strchr() will always return nonnull if we're searching
-		   for a null byte, because every string contains a null
-		   byte (at the end). */
+	while (strchr (delimiters, *s) != NULL) {		//1번을 2번에서 찾아 포인터로 반환
+		/* strchr()은 모든 문자열이 (끝에) null 바이트를 포함하기 때문에 
+		null 바이트를 검색하는 경우 항상 nonnull을 반환합니다. */
 		if (*s == '\0') {
 			*save_ptr = s;
 			return NULL;
