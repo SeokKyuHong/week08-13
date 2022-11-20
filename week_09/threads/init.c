@@ -237,6 +237,7 @@ parse_options (char **argv) {
 			PANIC ("unknown option `%s' (use -h for help)", name);
 	}
 
+	// printf("init의 argv : %s\n",*argv); // argv : put
 	return argv;
 }
 

@@ -102,6 +102,8 @@ memchr (const void *block_, int ch_, size_t size) {
    null pointer if C does not appear in STRING.  If C == '\0'
    then returns a pointer to the null terminator at the end of
    STRING. */
+/* STRING에서 C가 처음 나타나는 것을 찾아서 반환하거나 C가 STRING에 나타나지 않으면 널 포인터를 반환합니다.
+C == '\0'이면 STRING 끝에 있는 null 종결자에 대한 포인터를 반환합니다. */
 char *
 strchr (const char *string, int c_) {
 	char c = c_;
@@ -168,6 +170,8 @@ strspn (const char *string, const char *skip) {
 /* Returns a pointer to the first occurrence of NEEDLE within
    HAYSTACK.  Returns a null pointer if NEEDLE does not exist
    within HAYSTACK. */
+/* HAYSTACK 내에서 NEEDLE의 첫 번째 발생에 대한 포인터를 반환합니다.
+NEEDLE이 HAYSTACK 내에 존재하지 않는 경우 널 포인터를 리턴합니다. */
 char *
 strstr (const char *haystack, const char *needle) {
 	size_t haystack_len = strlen (haystack);
@@ -205,6 +209,10 @@ strstr (const char *haystack, const char *needle) {
    bytes.  Thus, S must be a modifiable string.  String literals,
    in particular, are *not* modifiable in C, even though for
    backward compatibility they are not `const'.
+   
+   strtok_r()은 구분 기호를 널 바이트로 변경하여 문자열 S를 수정합니다.
+   따라서 S는 수정 가능한 문자열이어야 합니다.
+   특히 문자열 리터럴은 이전 버전과의 호환성을 위해 'const'가 아니더라도 C에서 수정할 수 *없습니다*.
 
    Example usage:
 
