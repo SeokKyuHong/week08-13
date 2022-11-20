@@ -26,6 +26,7 @@ static void process_cleanup (void);
 static bool load (const char *file_name, struct intr_frame *if_);
 static void initd (void *f_name);
 static void __do_fork (void *);
+void argument_stack(char **argv, int argc, void **rsp);
 
 /* General process initializer for initd and other process. */
 /* initd 및 기타 프로세스를 위한 일반 프로세스 초기화. */
@@ -43,8 +44,9 @@ process_init (void) {
 process_create_initd()가 반환되기 전에 새 스레드가 예약될 수 있으며 종료될 수도 있습니다.
 initd의 스레드 ID를 반환하거나 스레드를 생성할 수 없는 경우 TID_ERROR를 반환합니다.
 이것은 한 번만 호출되어야 합니다. */
+//grep foo bar -> foo랑 bar를 전달하여 grep를 실행
 tid_t
-process_create_initd (const char *file_name) {
+process_create_initd (const char *file_name) { 
 	char *fn_copy;
 	tid_t tid;
 
@@ -62,6 +64,9 @@ process_create_initd (const char *file_name) {
 	tid = thread_create (file_name, PRI_DEFAULT, initd, fn_copy);
 	if (tid == TID_ERROR)
 		palloc_free_page (fn_copy);
+
+	
+
 	return tid;
 }
 
@@ -190,7 +195,7 @@ process_exec (void *f_name) { 				//실행함수
 	 * it stores the execution information to the member. */
 	/* 스레드 구조에서 intr_frame을 사용할 수 없습니다.
 	* 현재 쓰레드가 recheduled 될 때 멤버에게 실행 정보를 저장하기 때문이다. */
-	struct intr_frame _if;
+	struct intr_frame _if;					//사용 권한 설정?
 	_if.ds = _if.es = _if.ss = SEL_UDSEG;
 	_if.cs = SEL_UCSEG;
 	_if.eflags = FLAG_IF | FLAG_MBS;
@@ -198,13 +203,35 @@ process_exec (void *f_name) { 				//실행함수
 	/* We first kill the current context */
 	process_cleanup ();
 
+	/*--------------------------------*/
+
+	char *token, *argv[64], *save_ptr;  
+	char argc = 0;
+
+	token = strtok_r (file_name, " ", &save_ptr);
+    while (token)
+	{
+		argv[argc] = token;
+		token = strtok_r ('\0', " ", &save_ptr);
+		printf("잘 들어갔니?: %s\n", argv[argc]);
+		argc ++;
+	}
+	printf("잘 file_name?: %s\n", file_name);
+
+	/*---------------------------------*/
+
 	/* And then load the binary */
 	success = load (file_name, &_if);
-
-	/* If load failed, quit. */
-	palloc_free_page (file_name);
 	if (!success)
 		return -1;
+
+	/*---------------------------------*/
+
+	// hex_dump(_if.rsp, _if.rsp, USER_STACK - (uint64_t)*rspp, true);
+
+	/*---------------------------------*/
+	/* If load failed, quit. */
+	palloc_free_page (file_name);
 
 	/* Start switched process. */
 	do_iret (&_if);
@@ -221,11 +248,22 @@ process_exec (void *f_name) { 				//실행함수
  *
  * This function will be implemented in problem 2-2.  For now, it
  * does nothing. */
+/* 스레드 TID가 죽을 때까지 기다렸다가 종료 상태를 반환합니다.
+커널에 의해 종료된 경우(예: 예외로 인해 종료됨) -1을 반환합니다.
+TID가 유효하지 않거나 호출 프로세스의 자식이 아니거나 주어진 TID에 대해 process_wait()가 이미 성공적으로 호출된 경우 기다리지 않고 즉시 -1을 반환합니다.
+
+이 기능은 문제 2-2에서 구현될 것이다. 현재로서는 아무 작업도 수행하지 않습니다. */
 int
 process_wait (tid_t child_tid UNUSED) {
 	/* XXX: Hint) The pintos exit if process_wait (initd), we recommend you
 	 * XXX:       to add infinite loop here before
 	 * XXX:       implementing the process_wait. */
+	/* XXX: 힌트) pintos exit if process_wait(initd), process_wait를 구현하기 전에 여기에 
+	무한 루프를 추가하는 것이 좋습니다. */
+	
+	while (1)
+	{}
+
 	return -1;
 }
 
@@ -242,6 +280,7 @@ process_exit (void) {
 }
 
 /* Free the current process's resources. */
+/* 현재 프로세스의 리소스를 해제합니다. */
 static void
 process_cleanup (void) {
 	struct thread *curr = thread_current ();
@@ -253,6 +292,7 @@ process_cleanup (void) {
 	uint64_t *pml4;
 	/* Destroy the current process's page directory and switch back
 	 * to the kernel-only page directory. */
+	/* 현재 프로세스의 페이지 디렉토리를 파괴하고 커널 전용 페이지 디렉토리로 다시 전환합니다. */
 	pml4 = curr->pml4;
 	if (pml4 != NULL) {
 		/* Correct ordering here is crucial.  We must set
@@ -268,14 +308,18 @@ process_cleanup (void) {
 	}
 }
 
-/* Sets up the CPU for running user code in the nest thread.
+/* Sets up the CPU for running user code in the next thread.
  * This function is called on every context switch. */
+/* 넥스트 스레드에서 사용자 코드를 실행하기 위해 CPU를 설정합니다.
+  * 이 함수는 모든 컨텍스트 전환에서 호출됩니다. */
 void
 process_activate (struct thread *next) {
 	/* Activate thread's page tables. */
+	/* 스레드의 페이지 테이블을 활성화합니다. */
 	pml4_activate (next->pml4);
 
 	/* Set thread's kernel stack for use in processing interrupts. */
+	/* 인터럽트 처리에 사용할 스레드의 커널 스택을 설정합니다. */
 	tss_update (next);
 }
 
@@ -300,6 +344,8 @@ process_activate (struct thread *next) {
 
 /* Executable header.  See [ELF1] 1-4 to 1-8.
  * This appears at the very beginning of an ELF binary. */
+/* 실행 헤더. [ELF1] 1-4 ~ 1-8 참조.
+  * 이것은 ELF 바이너리의 맨 처음에 나타납니다. */
 struct ELF64_hdr {
 	unsigned char e_ident[EI_NIDENT];
 	uint16_t e_type;
@@ -342,6 +388,9 @@ static bool load_segment (struct file *file, off_t ofs, uint8_t *upage,
  * Stores the executable's entry point into *RIP
  * and its initial stack pointer into *RSP.
  * Returns true if successful, false otherwise. */
+/* FILE_NAME에서 현재 스레드로 ELF 실행 파일을 로드합니다.
+  * 실행 파일의 진입점을 *RIP에 저장하고 초기 스택 포인터를 *RSP에 저장합니다.
+  * 성공하면 true, 그렇지 않으면 false를 반환합니다. */
 static bool
 load (const char *file_name, struct intr_frame *if_) {
 	struct thread *t = thread_current ();
@@ -439,6 +488,8 @@ load (const char *file_name, struct intr_frame *if_) {
 	/* TODO: Your code goes here.
 	 * TODO: Implement argument passing (see project2/argument_passing.html). */
 
+
+/*--------------------------------------------------*/
 	success = true;
 
 done:

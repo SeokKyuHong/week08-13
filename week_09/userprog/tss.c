@@ -67,6 +67,7 @@ tss_get (void) {
 
 /* Sets the ring 0 stack pointer in the TSS to point to the end
  * of the thread stack. */
+/* 스레드 스택의 끝을 가리키도록 TSS의 링 0 스택 포인터를 설정합니다. */
 void
 tss_update (struct thread *next) {
 	ASSERT (tss != NULL);

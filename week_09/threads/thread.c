@@ -645,6 +645,7 @@ next_thread_to_run (void) {
 }
 
 /* Use iretq to launch the thread */
+/* Use iretq를 사용하여 스레드를 시작합니다. */
 void
 do_iret (struct intr_frame *tf) {
 	__asm __volatile(

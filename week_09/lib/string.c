@@ -102,6 +102,8 @@ memchr (const void *block_, int ch_, size_t size) {
    null pointer if C does not appear in STRING.  If C == '\0'
    then returns a pointer to the null terminator at the end of
    STRING. */
+/* STRING에서 C가 처음 나타나는 것을 찾아서 반환하거나 C가 STRING에 나타나지 않으면 널 포인터를 반환합니다.
+C == '\0'이면 STRING 끝에 있는 null 종결자에 대한 포인터를 반환합니다. */
 char *
 strchr (const char *string, int c_) {
 	char c = c_;
@@ -168,6 +170,8 @@ strspn (const char *string, const char *skip) {
 /* Returns a pointer to the first occurrence of NEEDLE within
    HAYSTACK.  Returns a null pointer if NEEDLE does not exist
    within HAYSTACK. */
+/* HAYSTACK 내에서 NEEDLE의 첫 번째 발생에 대한 포인터를 반환합니다.
+NEEDLE이 HAYSTACK 내에 존재하지 않는 경우 널 포인터를 리턴합니다. */
 char *
 strstr (const char *haystack, const char *needle) {
 	size_t haystack_len = strlen (haystack);
@@ -191,6 +195,10 @@ strstr (const char *haystack, const char *needle) {
    track of the tokenizer's position.  The return value each time
    is the next token in the string, or a null pointer if no
    tokens remain.
+   문자열을 DELIMITERS로 구분된 토큰으로 나눕니다.
+   이 함수가 처음 호출될 때 S는 토큰화할 문자열이어야 하고 후속 호출에서는 널 포인터여야 합니다.
+   SAVE_PTR은 토크나이저의 위치를 추적하는 데 사용되는 `char *' 변수의 주소입니다.
+   매번 반환 값은 문자열의 다음 토큰이거나 토큰이 남아 있지 않으면 null 포인터입니다.
 
    This function treats multiple adjacent delimiters as a single
    delimiter.  The returned tokens will never be length 0.
@@ -201,6 +209,10 @@ strstr (const char *haystack, const char *needle) {
    bytes.  Thus, S must be a modifiable string.  String literals,
    in particular, are *not* modifiable in C, even though for
    backward compatibility they are not `const'.
+   
+   strtok_r()은 구분 기호를 널 바이트로 변경하여 문자열 S를 수정합니다.
+   따라서 S는 수정 가능한 문자열이어야 합니다.
+   특히 문자열 리터럴은 이전 버전과의 호환성을 위해 'const'가 아니더라도 C에서 수정할 수 *없습니다*.
 
    Example usage:
 
@@ -217,6 +229,9 @@ outputs:
 'to'
 'tokenize.'
 */
+/* s는 분리하고자 하는 문자열, delimiters는 구분자(무엇을 기준으로 분리할것인가). 여기에서 분리자를 공백으로 줘야 한다.
+    save_ptr은 함수 내에서 토큰이 추출된 뒤 남은 녀석을 가리키기 위한 것이다. 
+    즉 strtok_r의 리턴은 s의 가장 앞에 있는 녀석이고, 이후 두번째 녀석에 접근하고 싶다면 두 번째 strtok 호출 전 s = save_ptr 해줘야 한다 */
 char *
 strtok_r (char *s, const char *delimiters, char **save_ptr) {
 	char *token;
@@ -231,10 +246,9 @@ strtok_r (char *s, const char *delimiters, char **save_ptr) {
 	ASSERT (s != NULL);
 
 	/* Skip any DELIMITERS at our current position. */
-	while (strchr (delimiters, *s) != NULL) {
-		/* strchr() will always return nonnull if we're searching
-		   for a null byte, because every string contains a null
-		   byte (at the end). */
+	while (strchr (delimiters, *s) != NULL) {		//1번을 2번에서 찾아 포인터로 반환
+		/* strchr()은 모든 문자열이 (끝에) null 바이트를 포함하기 때문에 
+		null 바이트를 검색하는 경우 항상 nonnull을 반환합니다. */
 		if (*s == '\0') {
 			*save_ptr = s;
 			return NULL;

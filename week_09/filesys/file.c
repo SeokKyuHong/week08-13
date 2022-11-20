@@ -145,6 +145,8 @@ file_length (struct file *file) {
 
 /* Sets the current position in FILE to NEW_POS bytes from the
  * start of the file. */
+/* FILE의 현재 위치를 다음 위치에서 NEW_POS 바이트로 설정합니다.
+  * 파일의 시작. */
 void
 file_seek (struct file *file, off_t new_pos) {
 	ASSERT (file != NULL);
