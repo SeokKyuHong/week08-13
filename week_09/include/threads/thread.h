@@ -101,7 +101,7 @@ struct thread {
 
 	// uint64_t *pml4;
 	/*프로젝트 2*/
-	// int exit_status;
+	int exit_status;
 
 #ifdef USERPROG
 	/* Owned by userprog/process.c. */
