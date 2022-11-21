@@ -203,33 +203,14 @@ process_exec (void *f_name) { 				//실행함수
 	/* We first kill the current context */
 	process_cleanup ();
 
-	/*--------------------------------*/
-
-	char *token, *argv[64], *save_ptr;  
-	char argc = 0;
-
-	token = strtok_r (file_name, " ", &save_ptr);
-    while (token)
-	{
-		argv[argc] = token;
-		token = strtok_r ('\0', " ", &save_ptr);
-		printf("잘 들어갔니?: %s\n", argv[argc]);
-		argc ++;
-	}
-	printf("잘 file_name?: %s\n", file_name);
-
-	/*---------------------------------*/
-
 	/* And then load the binary */
 	success = load (file_name, &_if);
+	/*---------------------------------*/
+	hex_dump(_if.rsp, _if.rsp, USER_STACK - (_if.rsp), true);
+	/*---------------------------------*/
 	if (!success)
 		return -1;
 
-	/*---------------------------------*/
-
-	// hex_dump(_if.rsp, _if.rsp, USER_STACK - (uint64_t)*rspp, true);
-
-	/*---------------------------------*/
 	/* If load failed, quit. */
 	palloc_free_page (file_name);
 
@@ -261,8 +242,8 @@ process_wait (tid_t child_tid UNUSED) {
 	/* XXX: 힌트) pintos exit if process_wait(initd), process_wait를 구현하기 전에 여기에 
 	무한 루프를 추가하는 것이 좋습니다. */
 	
-	while (1)
-	{}
+	while (1){}
+	// thread_set_priority(thread_get_priority()-1);
 
 	return -1;
 }
@@ -406,6 +387,23 @@ load (const char *file_name, struct intr_frame *if_) {
 		goto done;
 	process_activate (thread_current ());
 
+	/*---------------P2-----------------*/
+
+	char *token, *argv[128], *save_ptr;  
+	int argc = 0;
+
+	token = strtok_r (file_name, " ", &save_ptr);
+    while (token)
+	{
+		argv[argc] = token;
+		token = strtok_r ('\0', " ", &save_ptr);
+		
+		// printf("잘 들어갔니?: %s ----- %p\n", argv[argc], &argv[argc]);
+		argc ++;
+	}
+
+	/*--------------P2-------------------*/
+
 	/* Open executable file. */
 	file = filesys_open (file_name);
 	if (file == NULL) {
@@ -488,6 +486,72 @@ load (const char *file_name, struct intr_frame *if_) {
 	/* TODO: Your code goes here.
 	 * TODO: Implement argument passing (see project2/argument_passing.html). */
 
+	//1. 첫 주소 부터 글자의 길이(끝에 \0포함) 만큼 넣어준다
+	//	글자 길이 만큼 저장 위치가 감소 해야 한다. (거꾸로)
+	//	argv[0]까지 = RDI: 4
+
+	uintptr_t start_p = (if_ -> rsp);
+	printf("**start_addr** : %p\n", start_p) ;
+	size_t curr = 0;
+	char *address[100];
+
+	for (int i = argc - 1; i != -1; i--)
+	{
+		size_t argv_size = (strlen(argv[i]) + 1);
+		curr += argv_size;
+		address[i] = (start_p - curr);
+		
+		memcpy ((start_p-curr), argv[i], argv_size);
+		// start_p -= curr;
+		
+		printf("**USER_STACK** : %p\n", start_p) ;
+	}
+
+	//2. 마지막에 word-align = 0 으로 채운다 (8의 배수로 체운다)
+	// uintptr_t word_align_addr = (start_p-curr);
+
+	size_t word_align_size = (start_p-curr) % 8;
+
+	curr += word_align_size;
+	memset(start_p - curr, '\0', word_align_size);
+
+	printf("**word_align_addr** : %p\n", start_p) ;
+
+	// uintptr_t last_argv_addr = (start_p-word_align);
+
+	curr += 8;
+	memset(start_p - curr, 0, 8);
+
+	printf("**last_argv_addr** : %p\n", start_p) ;
+
+	
+
+	//3. argv의 주소값을 뒤에서부터 하나씩 넣는다
+	//	주소는 8바이트씩 넣는다. 
+	// uintptr_t addr_data = (last_argv_addr - 8);
+	for (int j = argc-1; j != -1; j--)
+	{
+		// uintptr_t addr_curr = address[j];
+		size_t argv_size = 8;
+		curr += argv_size;
+		
+		memcpy ((start_p-curr), &address[j], argv_size);
+		
+		printf("**addr_data-curr_1** : %p .. %p\n", start_p, address[j]) ;
+	}
+
+	//4. 마지막에 Return address 를 0으로 넣는다. 
+	// uintptr_t return_addr = (addr_data - curr_1);
+	curr += 8;
+	memset(start_p-curr, 0, 8);
+	printf("**Return address** : %p\n", start_p) ;
+
+	if_->rsp -= curr;
+	if_->R.rdi = argc;
+	if_->R.rsi = argv;
+
+	// hex_dump(if_->rsp, if_->rsp, USER_STACK - (_if.rsp), true);
+	
 
 /*--------------------------------------------------*/
 	success = true;

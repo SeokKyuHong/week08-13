@@ -21,6 +21,7 @@ memcpy (void *dst_, const void *src_, size_t size) {
 
 /* Copies SIZE bytes from SRC to DST, which are allowed to
    overlap.  Returns DST. */
+/* 겹칠 수 있는 SIZE 바이트를 SRC에서 DST로 복사합니다. DST를 반환합니다. */
 void *
 memmove (void *dst_, const void *src_, size_t size) {
 	unsigned char *dst = dst_;
@@ -209,7 +210,7 @@ strstr (const char *haystack, const char *needle) {
    bytes.  Thus, S must be a modifiable string.  String literals,
    in particular, are *not* modifiable in C, even though for
    backward compatibility they are not `const'.
-   
+
    strtok_r()은 구분 기호를 널 바이트로 변경하여 문자열 S를 수정합니다.
    따라서 S는 수정 가능한 문자열이어야 합니다.
    특히 문자열 리터럴은 이전 버전과의 호환성을 위해 'const'가 아니더라도 C에서 수정할 수 *없습니다*.
@@ -231,7 +232,8 @@ outputs:
 */
 /* s는 분리하고자 하는 문자열, delimiters는 구분자(무엇을 기준으로 분리할것인가). 여기에서 분리자를 공백으로 줘야 한다.
     save_ptr은 함수 내에서 토큰이 추출된 뒤 남은 녀석을 가리키기 위한 것이다. 
-    즉 strtok_r의 리턴은 s의 가장 앞에 있는 녀석이고, 이후 두번째 녀석에 접근하고 싶다면 두 번째 strtok 호출 전 s = save_ptr 해줘야 한다 */
+    즉 strtok_r의 리턴은 s의 가장 앞에 있는 녀석이고, 
+	이후 두번째 녀석에 접근하고 싶다면 두 번째 strtok 호출 전 s = save_ptr 해줘야 한다 */
 char *
 strtok_r (char *s, const char *delimiters, char **save_ptr) {
 	char *token;
@@ -270,7 +272,7 @@ strtok_r (char *s, const char *delimiters, char **save_ptr) {
 }
 
 /* Sets the SIZE bytes in DST to VALUE. */
-/* DST의 SIZE 바이트를 VALUE로 설정합니다. DST*/
+/* DST의 SIZE 바이트를 VALUE로 설정합니다. DST(데스티네이션)*/
 void *
 memset (void *dst_, int value, size_t size) {
 	unsigned char *dst = dst_;
@@ -297,6 +299,7 @@ strlen (const char *string) {
 
 /* If STRING is less than MAXLEN characters in length, returns
    its actual length.  Otherwise, returns MAXLEN. */
+/* STRING의 길이가 MAXLEN자 미만이면 실제 길이를 반환합니다. 그렇지 않으면 MAXLEN을 반환합니다. */
 size_t
 strnlen (const char *string, size_t maxlen) {
 	size_t length;
