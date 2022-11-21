@@ -1,6 +1,7 @@
 #include <syscall.h>
 #include <stdint.h>
 #include "../syscall-nr.h"
+#include "../syscall.h"
 
 __attribute__((always_inline))
 static __inline int64_t syscall (uint64_t num_, uint64_t a1_, uint64_t a2_,
@@ -31,6 +32,7 @@ static __inline int64_t syscall (uint64_t num_, uint64_t a1_, uint64_t a2_,
 
 /* Invokes syscall NUMBER, passing no arguments, and returns the
    return value as an `int'. */
+/* 인수를 전달하지 않고 시스템 호출 NUMBER를 호출하고 반환 값을 `int'로 반환합니다. */
 #define syscall0(NUMBER) ( \
 		syscall(((uint64_t) NUMBER), 0, 0, 0, 0, 0, 0))
 
