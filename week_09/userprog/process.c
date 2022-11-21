@@ -59,6 +59,11 @@ process_create_initd (const char *file_name) {
 		return TID_ERROR;
 	strlcpy (fn_copy, file_name, PGSIZE); 			// 2번을 1번으로 3번의 사이즈만큼 복사
 
+	/*아몰랑*/
+	char *save_ptr;  
+	strtok_r (file_name, " ", &save_ptr);
+	/*아몰랑*/
+
 	/* Create a new thread to execute FILE_NAME. */
 	/* FILE_NAME을 실행할 새 스레드를 만듭니다. */
 	tid = thread_create (file_name, PRI_DEFAULT, initd, fn_copy);
@@ -206,7 +211,7 @@ process_exec (void *f_name) { 				//실행함수
 	/* And then load the binary */
 	success = load (file_name, &_if);
 	/*---------------------------------*/
-	// hex_dump(_if.rsp, _if.rsp, USER_STACK - (_if.rsp), true);
+	hex_dump(_if.rsp, _if.rsp, USER_STACK - (_if.rsp), true);
 	/*---------------------------------*/
 	if (!success)
 		return -1;
@@ -256,6 +261,9 @@ process_exit (void) {
 	 * TODO: Implement process termination message (see
 	 * TODO: project2/process_termination.html).
 	 * TODO: We recommend you to implement process resource cleanup here. */
+	/* TODO: 코드가 여기에 갑니다.
+	 * TODO: 프로세스 종료 메시지 구현(project2/process_termination.html 참조).
+	 * TODO: 여기에서 프로세스 리소스 정리를 구현하는 것이 좋습니다. */
 
 	process_cleanup ();
 }
@@ -549,8 +557,6 @@ load (const char *file_name, struct intr_frame *if_) {
 	if_->rsp -= curr;
 	if_->R.rdi = argc;
 	if_->R.rsi = (if_->rsp)+8;
-
-	// hex_dump(if_->rsp, if_->rsp, USER_STACK - (_if.rsp), true);
 	
 /*--------------------------------------------------*/
 	success = true;

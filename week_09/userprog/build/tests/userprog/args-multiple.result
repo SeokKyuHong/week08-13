@@ -1,0 +1,41 @@
+FAIL
+Test output failed to match any acceptable form.
+
+Acceptable output:
+  (args) begin
+  (args) argc = 5
+  (args) argv[0] = 'args-multiple'
+  (args) argv[1] = 'some'
+  (args) argv[2] = 'arguments'
+  (args) argv[3] = 'for'
+  (args) argv[4] = 'you!'
+  (args) argv[5] = null
+  (args) end
+  args-multiple: exit(0)
+Differences in `diff -u' format:
++ 000000004747ffa0  00 00 00 00 00 00 00 00-da ff 47 47 00 00 00 00 |..........GG....|
++ 000000004747ffb0  e8 ff 47 47 00 00 00 00-ed ff 47 47 00 00 00 00 |..GG......GG....|
++ 000000004747ffc0  f7 ff 47 47 00 00 00 00-fb ff 47 47 00 00 00 00 |..GG......GG....|
++ 000000004747ffd0  00 00 00 00 00 00 00 00-00 00 61 72 67 73 2d 6d |..........args-m|
++ 000000004747ffe0  75 6c 74 69 70 6c 65 00-73 6f 6d 65 00 61 72 67 |ultiple.some.arg|
++ 000000004747fff0  75 6d 65 6e 74 73 00 66-6f 72 00 79 6f 75 21 00 |uments.for.you!.|
++ 야0x1 뭐0x604d40 야0xd 
+  (args) begin
++ 야0x1 뭐0x604d40 야0x10 
+  (args) argc = 5
++ 야0x1 뭐0x604d40 야0x21 
+  (args) argv[0] = 'args-multiple'
++ 야0x1 뭐0x604d40 야0x18 
+  (args) argv[1] = 'some'
++ 야0x1 뭐0x604d40 야0x1d 
+  (args) argv[2] = 'arguments'
++ 야0x1 뭐0x604d40 야0x17 
+  (args) argv[3] = 'for'
++ 야0x1 뭐0x604d40 야0x18 
+  (args) argv[4] = 'you!'
++ 야0x1 뭐0x604d40 야0x16 
+  (args) argv[5] = null
++ 야0x1 뭐0x604d40 야0xb 
+  (args) end
++ 야0 뭐0 야0 
+  args-multiple: exit(0)

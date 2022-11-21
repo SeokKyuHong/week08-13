@@ -12,8 +12,8 @@
 
 void syscall_entry (void);
 void syscall_handler (struct intr_frame *);
-void halt(void);
-void exit(int status);
+void halt (void) NO_RETURN;
+void exit (int status) NO_RETURN;
 
 
 /* System call.
@@ -46,25 +46,28 @@ syscall_init (void) {
 void
 syscall_handler (struct intr_frame *f UNUSED) {
 	// TODO: Your implementation goes here.
-	int syscall_no = f->R.rax;
-	uint64_t a1 = f->R.rdi;
-	uint64_t a2 = f->R.rsi;
-	uint64_t a3 = f->R.rdx;
+	int syscall_no = f->R.rax;  // 파일 네임
+	uint64_t a1 = f->R.rdi;		// c(개수)
+	uint64_t a2 = f->R.rsi;		// v(데이터)
+	uint64_t a3 = f->R.rdx;     //
 	uint64_t a4 = f->R.r10;
 	uint64_t a5 = f->R.r8;
 	uint64_t a6 = f->R.r9;
 	
+	// printf("야%p 뭐%p 야%p \n", (char*)a1, (char*)a2, (char*)a3);
+
 	switch (syscall_no) {		// rax is the system call number
-		// case SYS_HALT : 
-		// halt();
-		// break;
+		
+		case SYS_HALT : 
+		halt();
+		break;
 
 		case SYS_EXIT : 
-		thread_exit ();
+		exit (a1);
 		break;
 			
 		// case SYS_FORK :
-		// f->R.rax = fork(f->R.rdi, f);
+		// a3 = fork(a3, f);
 		// break;
 
 		// case SYS_EXEC :
@@ -110,16 +113,15 @@ syscall_handler (struct intr_frame *f UNUSED) {
 	
 }
 
-// // pintos 종료 시스템 콜
-// void halt(void) {
-// 	power_off();
-// }
+// pintos 종료 시스템 콜
+void halt(void) {
+	power_off();
+}
 
-// // 프로세스 종료 시스템 콜
-// void exit(int status) {
-// 	struct thread *cur = thread_current();
-//     cur->exit_status = status;		// 프로그램이 정상적으로 종료되었는지 확인(정상적 종료 시 0)
-
-// 	printf("%s: exit(%d)\n", thread_name(), status); 	// 종료 시 Process Termination Message 출력
-// 	thread_exit();		// 스레드 종료
-// }
+void
+exit (int status) {
+	struct thread *t = thread_current();
+	t->exit_status = status;
+	printf("%s: exit(%d)\n", thread_name(), status); 
+	thread_exit ();
+}
