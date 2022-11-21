@@ -206,7 +206,7 @@ process_exec (void *f_name) { 				//실행함수
 	/* And then load the binary */
 	success = load (file_name, &_if);
 	/*---------------------------------*/
-	hex_dump(_if.rsp, _if.rsp, USER_STACK - (_if.rsp), true);
+	// hex_dump(_if.rsp, _if.rsp, USER_STACK - (_if.rsp), true);
 	/*---------------------------------*/
 	if (!success)
 		return -1;
@@ -242,8 +242,8 @@ process_wait (tid_t child_tid UNUSED) {
 	/* XXX: 힌트) pintos exit if process_wait(initd), process_wait를 구현하기 전에 여기에 
 	무한 루프를 추가하는 것이 좋습니다. */
 	
-	while (1){}
-	// thread_set_priority(thread_get_priority()-1);
+	// while (1){}
+	thread_set_priority(thread_get_priority()-1);
 
 	return -1;
 }
@@ -491,7 +491,7 @@ load (const char *file_name, struct intr_frame *if_) {
 	//	argv[0]까지 = RDI: 4
 
 	uintptr_t start_p = (if_ -> rsp);
-	printf("**start_addr** : %p\n", start_p) ;
+	// printf("**start_addr** : %p\n", start_p) ;
 	size_t curr = 0;
 	char *address[100];
 
@@ -504,7 +504,7 @@ load (const char *file_name, struct intr_frame *if_) {
 		memcpy ((start_p-curr), argv[i], argv_size);
 		// start_p -= curr;
 		
-		printf("**USER_STACK** : %p\n", start_p) ;
+		// printf("**USER_STACK** : %p\n", start_p) ;
 	}
 
 	//2. 마지막에 word-align = 0 으로 채운다 (8의 배수로 체운다)
@@ -515,14 +515,14 @@ load (const char *file_name, struct intr_frame *if_) {
 	curr += word_align_size;
 	memset(start_p - curr, '\0', word_align_size);
 
-	printf("**word_align_addr** : %p\n", start_p) ;
+	// printf("**word_align_addr** : %p\n", start_p) ;
 
 	// uintptr_t last_argv_addr = (start_p-word_align);
 
 	curr += 8;
 	memset(start_p - curr, 0, 8);
 
-	printf("**last_argv_addr** : %p\n", start_p) ;
+	// printf("**last_argv_addr** : %p\n", start_p) ;
 
 	
 
@@ -537,22 +537,21 @@ load (const char *file_name, struct intr_frame *if_) {
 		
 		memcpy ((start_p-curr), &address[j], argv_size);
 		
-		printf("**addr_data-curr_1** : %p .. %p\n", start_p, address[j]) ;
+		// printf("**addr_data-curr_1** : %p .. %p\n", start_p, address[j]) ;
 	}
 
 	//4. 마지막에 Return address 를 0으로 넣는다. 
 	// uintptr_t return_addr = (addr_data - curr_1);
 	curr += 8;
 	memset(start_p-curr, 0, 8);
-	printf("**Return address** : %p\n", start_p) ;
+	// printf("**Return address** : %p\n", start_p) ;
 
 	if_->rsp -= curr;
 	if_->R.rdi = argc;
-	if_->R.rsi = argv;
+	if_->R.rsi = (if_->rsp)+8;
 
 	// hex_dump(if_->rsp, if_->rsp, USER_STACK - (_if.rsp), true);
 	
-
 /*--------------------------------------------------*/
 	success = true;
 

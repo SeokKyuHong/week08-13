@@ -7,9 +7,14 @@
 #include "userprog/gdt.h"
 #include "threads/flags.h"
 #include "intrinsic.h"
+#include "threads/init.h"
+
 
 void syscall_entry (void);
 void syscall_handler (struct intr_frame *);
+void halt(void);
+void exit(int status);
+
 
 /* System call.
  *
@@ -41,7 +46,80 @@ syscall_init (void) {
 void
 syscall_handler (struct intr_frame *f UNUSED) {
 	// TODO: Your implementation goes here.
-	printf ("출력 되는 거니?\n");
-	printf ("system call!\n");
-	thread_exit ();
+	int syscall_no = f->R.rax;
+	uint64_t a1 = f->R.rdi;
+	uint64_t a2 = f->R.rsi;
+	uint64_t a3 = f->R.rdx;
+	uint64_t a4 = f->R.r10;
+	uint64_t a5 = f->R.r8;
+	uint64_t a6 = f->R.r9;
+	
+	switch (syscall_no) {		// rax is the system call number
+		// case SYS_HALT : 
+		// halt();
+		// break;
+
+		case SYS_EXIT : 
+		thread_exit ();
+		break;
+			
+		// case SYS_FORK :
+		// f->R.rax = fork(f->R.rdi, f);
+		// break;
+
+		// case SYS_EXEC :
+		// break;
+
+		// case SYS_WAIT :
+		// break;
+
+		// case SYS_CREATE :
+		// break;
+
+		// case SYS_REMOVE :
+		// break;
+
+		// case SYS_OPEN :
+		// break;
+
+		// case SYS_FILESIZE :
+		// break;
+
+		// case SYS_READ :
+		// break;
+
+		case SYS_WRITE :
+		printf("%s", (char*)a2);
+		break;
+
+		// case SYS_SEEK :
+		// break;
+
+		// case SYS_TELL :
+		// break;
+
+		// case SYS_CLOSE :
+		// break;
+
+	}
+
+
+	// printf ("system call!\n");
+
+
+	
 }
+
+// // pintos 종료 시스템 콜
+// void halt(void) {
+// 	power_off();
+// }
+
+// // 프로세스 종료 시스템 콜
+// void exit(int status) {
+// 	struct thread *cur = thread_current();
+//     cur->exit_status = status;		// 프로그램이 정상적으로 종료되었는지 확인(정상적 종료 시 0)
+
+// 	printf("%s: exit(%d)\n", thread_name(), status); 	// 종료 시 Process Termination Message 출력
+// 	thread_exit();		// 스레드 종료
+// }

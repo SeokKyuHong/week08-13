@@ -100,7 +100,8 @@ struct thread {
 	struct list_elem dona_elem; //multiple 고려
 
 	// uint64_t *pml4;
-	
+	/*프로젝트 2*/
+	// int exit_status;
 
 #ifdef USERPROG
 	/* Owned by userprog/process.c. */
