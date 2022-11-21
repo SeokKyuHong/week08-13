@@ -206,7 +206,7 @@ process_exec (void *f_name) { 				//실행함수
 	/* And then load the binary */
 	success = load (file_name, &_if);
 	/*---------------------------------*/
-	hex_dump(_if.rsp, _if.rsp, USER_STACK - (_if.rsp), true);
+	// hex_dump(_if.rsp, _if.rsp, USER_STACK - (_if.rsp), true);
 	/*---------------------------------*/
 	if (!success)
 		return -1;
@@ -242,8 +242,8 @@ process_wait (tid_t child_tid UNUSED) {
 	/* XXX: 힌트) pintos exit if process_wait(initd), process_wait를 구현하기 전에 여기에 
 	무한 루프를 추가하는 것이 좋습니다. */
 	
-	while (1){}
-	// thread_set_priority(thread_get_priority()-1);
+	// while (1){}
+	thread_set_priority(thread_get_priority()-1);
 
 	return -1;
 }
@@ -548,7 +548,7 @@ load (const char *file_name, struct intr_frame *if_) {
 
 	if_->rsp -= curr;
 	if_->R.rdi = argc;
-	if_->R.rsi = argv;
+	if_->R.rsi = (if_->rsp)+8;
 
 	// hex_dump(if_->rsp, if_->rsp, USER_STACK - (_if.rsp), true);
 	
