@@ -549,6 +549,9 @@ __printf (const char *format,
    starting at OFS for the first byte in BUF.  If ASCII is true
    then the corresponding ASCII characters are also rendered
    alongside. */
+/* BUF의 SIZE 바이트를 줄당 16으로 배열된 16진 바이트로 콘솔에 덤프합니다.
+BUF의 첫 번째 바이트에 대해 OFS에서 시작하는 숫자 오프셋도 포함됩니다.
+ASCII가 true이면 해당 ASCII 문자도 함께 렌더링됩니다. */
 void
 hex_dump (uintptr_t ofs, const void *buf_, size_t size, bool ascii) {
 	const uint8_t *buf = buf_;
