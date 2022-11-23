@@ -212,6 +212,7 @@ process_exec (void *f_name) { 				//실행함수
 	success = load (file_name, &_if);
 	/*---------------------------------*/
 	// hex_dump(_if.rsp, _if.rsp, USER_STACK - (_if.rsp), true);
+
 	/*---------------------------------*/
 	if (!success)
 		return -1;

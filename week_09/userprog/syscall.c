@@ -9,6 +9,8 @@
 #include "intrinsic.h"
 #include "threads/init.h"
 #include "threads/palloc.h"
+#include "filesys/filesys.h"
+#include "kernel/stdio.h"
 
 
 void syscall_entry (void);
@@ -17,6 +19,8 @@ void halt_syscall (void) NO_RETURN;
 void exit_syscall (int status) NO_RETURN;
 bool create_syscall (char *file, unsigned initial_size);
 int exec_syscall (char *file);
+bool remove_syscall (const char *file);
+int write (int fd, const void *buffer, unsigned size);
 
 
 // 유저영역의 주소인지 확인 
@@ -61,7 +65,7 @@ syscall_init (void) {
 void
 syscall_handler (struct intr_frame *f UNUSED) {
 	// TODO: Your implementation goes here.
-	// int syscall_no = f->R.rax;  // 파일 네임
+	uint64_t syscall_no = f->R.rax;  // 콜 넘버
 
 	// uint64_t a1 = f->R.rdi;		// c(개수?)
 	// uint64_t a2 = f->R.rsi;		// v(데이터)
@@ -70,8 +74,9 @@ syscall_handler (struct intr_frame *f UNUSED) {
 	// uint64_t a5 = f->R.r8;
 	// uint64_t a6 = f->R.r9;
 	
+	
 
-	switch (f->R.rax) {		// rax is the system call number
+	switch (syscall_no) {		// rax is the system call number
 
 		char *fn_copy;
 		
@@ -102,13 +107,17 @@ syscall_handler (struct intr_frame *f UNUSED) {
 
 		// 파일 이름과 파일 사이즈를 인자 값으로 받아 파일을 생성하는 함수.
 		case SYS_CREATE : 
+			check_address(f->R.rdi);
 			f->R.rax = create_syscall(f->R.rdi, f->R.rsi);
 		break;
 
-		// case SYS_REMOVE :
-		// break;
+		case SYS_REMOVE :
+			check_address(f->R.rdi);
+			f->R.rax = remove_syscall(f->R.rdi);
+		break;
 
 		// case SYS_OPEN :
+		// 	hong_dump_frame (f);
 		// break;
 
 		// case SYS_FILESIZE :
@@ -118,7 +127,8 @@ syscall_handler (struct intr_frame *f UNUSED) {
 		// break;
 
 		case SYS_WRITE :
-		printf("%s", (char*)f->R.rsi);
+			check_address(f->R.rsi);
+			f->R.rax = write(f->R.rdi, f->R.rsi, f->R.rdx);	
 		break;
 
 		// case SYS_SEEK :
@@ -158,6 +168,12 @@ create_syscall (char *file, unsigned initial_size) {
 	return return_valeu;
 }
 
+bool
+remove_syscall (const char *file) {
+	bool return_valeu = filesys_remove(file);
+	return return_valeu;
+}
+
 // 현재 프로세스를 cmd_line에서 지정된 인수를 전달하여 이름이 지정된 실행 파일로 변경
 int
 exec_syscall (char *file) {
@@ -176,4 +192,12 @@ exec_syscall (char *file) {
 	
 	NOT_REACHED();
 	return 0;
+}
+
+int 
+write (int fd, const void *buffer, unsigned size){
+	if(fd == 1){
+		putbuf(buffer, size);
+		return size;
+	}
 }
