@@ -30,6 +30,13 @@ typedef int tid_t;
 #define PRI_DEFAULT 31                  /* Default priority. */
 #define PRI_MAX 63                      /* Highest priority. */
 
+/*project2: sysem call*/
+#define FDT_PAGES 3
+#define MAX_FD_NUM	(1<<9)
+#define STDOUT_FILENO 1
+#define STDIN_FILENO 0
+
+
 /* A kernel thread or user process.
  *
  * Each thread structure is stored in its own 4 kB page.  The
@@ -101,6 +108,8 @@ struct thread {
 
 	/*프로젝트 2*/
 	int exit_status;			//스레드 종료 상태 체크 
+	struct file **file_descriptor_table;
+	int fdidx;
 
 
 #ifdef USERPROG
