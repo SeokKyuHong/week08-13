@@ -27,6 +27,10 @@ int read_syscall (int fd, void *buffer, unsigned size);
 void seek_syscall (int fd, unsigned position);
 unsigned tell_syscall (int fd);
 void close_syscall (int fd);
+int add_file_to_fd_table (struct file *file);
+void check_address (const uint64_t *addr);
+struct file *fd_to_struct_filep (int fd);
+void remove_file_from_fd_table(int fd);
 
 
 
@@ -60,20 +64,16 @@ check_address (const uint64_t *addr)
 
 int 
 add_file_to_fd_table (struct file *file){
+	int fd = 2;
 	struct thread *t = thread_current();
-	struct file **fd_table = t -> file_descriptor_table;
-	int fd = t->fdidx; //2부터 시작
-
-	while (t -> file_descriptor_table[fd] != NULL && fd < MAX_FD_NUM){
-		fd ++;
+	while(t->file_descriptor_table[fd] != NULL && fd < MAX_FD_NUM)
+	{
+		fd++;
 	}
-
 	if (fd >= MAX_FD_NUM){
 		return -1;
 	}
-	t -> fdidx = fd;
-	fd_table[fd] = file;
-
+	t->file_descriptor_table[fd] = file;
 	return fd;
 }
 
@@ -83,10 +83,7 @@ file *fd_to_struct_filep (int fd){
 		return NULL;
 	}
 	struct thread *t = thread_current();
-	struct file **fd_table = t -> file_descriptor_table;
-
-	struct file *file = fd_table[fd];
-	return file;
+	return t -> file_descriptor_table[fd];
 }
 
 void
@@ -257,19 +254,22 @@ exec_syscall (char *file) {
 int 
 write_syscall (int fd, const void *buffer, unsigned size){
 	check_address(buffer);
-	struct file *fileobj = fd_to_struct_filep(fd);
-	int read_count;
-	if (fd == STDOUT_FILENO){
+	if (fd == STDIN_FILENO){
+		return 0;
+	}
+	else if (fd == STDOUT_FILENO){
 		putbuf(buffer, size);
-		read_count = size;
+		return size;
 	}
-	else if (fd == STDIN_FILENO){
-		return -1;
-	}
-	else {
+	else{
+		struct file *write_file = fd_to_struct_filep(fd);
+		if (write_file == NULL){
+			return 0;
+		}
 		lock_acquire(&filesys_lock);
-		read_count = file_write(fileobj, buffer, size);
+		off_t write_byte = file_write(write_file, buffer, size);
 		lock_release(&filesys_lock);
+		return write_byte;
 	}
 }
 
@@ -294,19 +294,25 @@ open_syscall (const char *file) {
 
 int
 filesize_syscall (int fd) {
-	check_address(fd);
+	// printf("di dlrj cnffurehlsl?????\n");
+	// check_address(fd);
 	struct file *fileobj = fd_to_struct_filep(fd);
 	if (fileobj == NULL){
 		return -1;
 	}
-	file_length(fileobj);
+	lock_acquire(&filesys_lock);
+	off_t write_byte = file_length(fileobj);
+	lock_release(&filesys_lock);
+	return write_byte;
 }
 
 int
 read_syscall (int fd, void *buffer, unsigned size) {
+	// printf("야 들어오냐?%d\n",fd);
 	check_address(buffer);
-	check_address(buffer + size -1);
-	unsigned char *buf = buffer;
+	// check_address(buffer + size -1);
+	// unsigned char *buf = buffer;
+
 	int read_count;
 
 	struct file *fileobj = fd_to_struct_filep(fd);
@@ -318,9 +324,9 @@ read_syscall (int fd, void *buffer, unsigned size) {
 	//stdin일때
 	if (fd == STDIN_FILENO){
 		char key;
-		for (int read_count = 0; read_count < size; read_count++){
+		for (read_count = 0; read_count < size; read_count++){
 			key = input_getc();
-			*buf++ = key;
+			// *buf++ = key;
 			if (key == '\0'){
 				break;
 			}
@@ -330,6 +336,10 @@ read_syscall (int fd, void *buffer, unsigned size) {
 		return -1;
 	}
 	else {
+		// // struct file *read_file = fd_to_struct_filep(fd);
+		// if (fileobj == NULL){
+		// 	return -1;
+		// }
 		lock_acquire(&filesys_lock);
 		read_count = file_read(fileobj, buffer, size);
 		lock_release(&filesys_lock);
@@ -367,11 +377,11 @@ void
 close_syscall (int fd) {
 	struct file *close_file = fd_to_struct_filep(fd);
 	if (close_file == NULL){
-		return;
+		return ;
 	}
 
 	lock_acquire(&filesys_lock);
 	file_close(close_file);
 	lock_release(&filesys_lock);
-	remove_file_from_fd_table(close_file);
+	remove_file_from_fd_table(fd);
 }
