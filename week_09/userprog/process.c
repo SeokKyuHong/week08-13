@@ -251,7 +251,9 @@ process_wait (tid_t child_tid UNUSED) {
 	// while (1){}
 	thread_set_priority(thread_get_priority()-1);
 
-	return -1;
+	// struct thread *child = get_child(child_tid);
+
+	
 }
 
 /* Exit the process. This function is called by thread_exit (). */
@@ -398,7 +400,7 @@ load (const char *file_name, struct intr_frame *if_) {
 
 	/*---------------P2-----------------*/
 
-	char *token, *argv[128], *save_ptr;  
+	char *token, *argv[64], *save_ptr;  
 	int argc = 0;
 
 	token = strtok_r (file_name, " ", &save_ptr);
@@ -502,7 +504,7 @@ load (const char *file_name, struct intr_frame *if_) {
 	uintptr_t start_p = (if_ -> rsp);
 	// printf("**start_addr** : %p\n", start_p) ;
 	size_t curr = 0;
-	char *address[100];
+	char *address[64];
 
 	for (int i = argc - 1; i != -1; i--)
 	{

@@ -303,6 +303,15 @@ thread_create (const char *name, int priority,
 	init_thread (t, name, priority);
 	tid = t->tid = allocate_tid ();
 
+	/*project 2_ system call*/
+	t -> file_descriptor_table = palloc_get_multiple(PAL_ZERO, FDT_PAGES);
+	if (t->file_descriptor_table == NULL){
+		return TID_ERROR;
+	}
+	t -> fdidx = 2;	//0은 stdin, 1은 stsout에 이미 할당 함
+	t -> file_descriptor_table[0] = 1;	//stdin 자리 : 1 
+	t -> file_descriptor_table[1] = 2;	//stdout 자리 : 2
+
 	/* Call the kernel_thread if it scheduled.
 		* Note) rdi is 1st argument, and rsi is 2nd argument. */
 	/* 예약된 경우 kernel_thread를 호출합니다.
@@ -578,6 +587,9 @@ init_thread (struct thread *t, const char *name, int priority) {
 	t->init_priority = priority;
 	t->wait_lock = NULL;
 	list_init(&t->dona);
+
+	/*project 2*/
+	t->exit_status = 0;
 
 }
 
