@@ -111,6 +111,9 @@ struct thread {
 	struct file **file_descriptor_table;
 	int fdidx;
 
+	/*프로젝트 2 -- fork 관련*/
+	// tid_t child_tid;
+
 
 #ifdef USERPROG
 	/* Owned by userprog/process.c. */
