@@ -31,6 +31,7 @@ int add_file_to_fd_table (struct file *file);
 void check_address (const uint64_t *addr);
 struct file *fd_to_struct_filep (int fd);
 void remove_file_from_fd_table(int fd);
+int fork_syscall(const char *thread_name, struct intr_frame *f);
 
 
 
@@ -56,10 +57,14 @@ void
 check_address (const uint64_t *addr)
 {
 	struct thread *cur = thread_current();
-	if (addr == NULL || !(is_user_vaddr(addr)) || pml4_get_page(cur -> pml4, addr) == NULL)
+	if (!(is_user_vaddr(addr)) || pml4_get_page(cur -> pml4, addr) == NULL)
 	{
+		// printf("__________********__________\n");
 		exit_syscall(-1);
 	}
+	// if (addr == NULL){
+	// 	return ;
+	// }
 }
 
 int 
@@ -143,9 +148,9 @@ syscall_handler (struct intr_frame *f UNUSED) {
 			exit_syscall (f->R.rdi);
 		break;
 			
-		// case SYS_FORK :
-		// 	f->R.rdx = fork_syscall(f->R.rdx, f);
-		// break;
+		case SYS_FORK :
+			f->R.rax = fork_syscall(f->R.rdi, f);
+		break;
 
 		//프로세스 생성
 		case SYS_EXEC :
@@ -171,7 +176,7 @@ syscall_handler (struct intr_frame *f UNUSED) {
 
 		case SYS_FILESIZE :
 			
-			f->R.rax = filesize_syscall(f->R.rdi);
+			f->R.rax = filesize_syscall(f->R.rdi); 
 		break;
 
 		case SYS_READ :
@@ -185,7 +190,7 @@ syscall_handler (struct intr_frame *f UNUSED) {
 
 		case SYS_SEEK :
 			// hong_dump_frame (f);
-			seek_syscall (f->R.rdi, f->R.rdx);
+			seek_syscall (f->R.rdi, f->R.rsi);
 		break;
 
 		case SYS_TELL :
@@ -253,19 +258,24 @@ exec_syscall (char *file) {
 
 int 
 write_syscall (int fd, const void *buffer, unsigned size){
+	
 	check_address(buffer);
 	if (fd == STDIN_FILENO){
 		return 0;
 	}
 	else if (fd == STDOUT_FILENO){
+		
 		putbuf(buffer, size);
+		
 		return size;
 	}
 	else{
 		struct file *write_file = fd_to_struct_filep(fd);
 		if (write_file == NULL){
+			
 			return 0;
 		}
+		
 		lock_acquire(&filesys_lock);
 		off_t write_byte = file_write(write_file, buffer, size);
 		lock_release(&filesys_lock);
@@ -289,12 +299,12 @@ open_syscall (const char *file) {
 	if (fd == -1){				//열수 없는 파일이면 
 		file_close (open_file);
 	}
+	
 	return fd;
 }
 
 int
 filesize_syscall (int fd) {
-	// printf("di dlrj cnffurehlsl?????\n");
 	// check_address(fd);
 	struct file *fileobj = fd_to_struct_filep(fd);
 	if (fileobj == NULL){
@@ -308,9 +318,9 @@ filesize_syscall (int fd) {
 
 int
 read_syscall (int fd, void *buffer, unsigned size) {
-	// printf("야 들어오냐?%d\n",fd);
+	// printf("-------------*****_________\n");
 	check_address(buffer);
-	// check_address(buffer + size -1);
+	check_address(buffer + size -1);
 	// unsigned char *buf = buffer;
 
 	int read_count;
@@ -336,10 +346,11 @@ read_syscall (int fd, void *buffer, unsigned size) {
 		return -1;
 	}
 	else {
-		// // struct file *read_file = fd_to_struct_filep(fd);
+		// struct file *read_file = fd_to_struct_filep(fd);
 		// if (fileobj == NULL){
 		// 	return -1;
 		// }
+		
 		lock_acquire(&filesys_lock);
 		read_count = file_read(fileobj, buffer, size);
 		lock_release(&filesys_lock);
@@ -349,14 +360,19 @@ read_syscall (int fd, void *buffer, unsigned size) {
 
 void
 seek_syscall (int fd, unsigned position) {
-	if (fd < 2){
-		return;
-	}
+	
+	// if (fd < 2){
+		
+	// 	return;
+	// }
 	struct file *file = fd_to_struct_filep(fd);
-	check_address(file);
-	if (file == NULL){
-		return;
-	}
+	
+	// check_address(file);
+	
+	// if (file == NULL){
+	// 	return;
+	// }
+	
 	file_seek(file, position);
 }
 
@@ -385,3 +401,4 @@ close_syscall (int fd) {
 	lock_release(&filesys_lock);
 	remove_file_from_fd_table(fd);
 }
+
