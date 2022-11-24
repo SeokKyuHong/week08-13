@@ -141,6 +141,7 @@ page_fault (struct intr_frame *f) {
 	write = (f->error_code & PF_W) != 0;
 	user = (f->error_code & PF_U) != 0;
 
+	/*프로젝트 2*/
 	if (user){
 		f->R.rdi = -1;
 		exit_syscall(f->R.rdi);

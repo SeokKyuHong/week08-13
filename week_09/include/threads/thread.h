@@ -112,7 +112,7 @@ struct thread {
 	int fdidx;
 
 	/*프로젝트 2 -- fork 관련*/
-	// tid_t child_tid;
+	tid_t child_tid;
 
 
 #ifdef USERPROG
