@@ -314,6 +314,7 @@ thread_create (const char *name, int priority,
 
 	struct thread *curr = thread_current();
 	list_push_back(&curr -> child_list, &t->child_list_elem); 
+	// printf("");
 
 	/* Call the kernel_thread if it scheduled.
 		* Note) rdi is 1st argument, and rsi is 2nd argument. */
