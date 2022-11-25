@@ -5,6 +5,7 @@
 #include <list.h>
 #include <stdint.h>
 #include "threads/interrupt.h"
+#include "threads/synch.h"
 #ifdef VM
 #include "vm/vm.h"
 #endif
@@ -112,7 +113,12 @@ struct thread {
 	int fdidx;
 
 	/*프로젝트 2 -- fork 관련*/
-	tid_t child_tid;
+	tid_t pid;
+
+	struct semaphore sema_fork;
+	struct intr_frame parent_if;
+	struct list child_list;
+	struct list_elem child_list_elem;
 
 
 #ifdef USERPROG

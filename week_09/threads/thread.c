@@ -590,6 +590,8 @@ init_thread (struct thread *t, const char *name, int priority) {
 
 	/*project 2*/
 	t->exit_status = 0;
+	t->sema_fork.value = 0;
+	list_init(&t->child_list);
 
 }
 
