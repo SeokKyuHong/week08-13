@@ -216,6 +216,11 @@ exit_syscall (int status) {
 	thread_exit ();
 }
 
+int 
+fork_syscall(const char *thread_name, struct intr_frame *f){
+	return process_fork(thread_name, f);
+}
+
 // 파일 이름과 파일 사이즈를 인자 값으로 받아 파일을 생성하는 함수.
 bool
 create_syscall (char *file, unsigned initial_size) {

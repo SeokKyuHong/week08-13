@@ -90,6 +90,19 @@ initd (void *f_name) {
 	NOT_REACHED ();
 }
 
+struct
+thread *get_child (int pid){
+	struct thread *curr = thread_current();
+	struct list *child_list = &curr->child_list;
+	for(struct list_elem *e = list_begin(child_list); e != list_end(child_list); e = list_next(e)){
+		struct thread *t = list_entry(e, struct thread, child_list_elem);
+		if(t->tid == pid){
+			return t;
+		}
+	}
+	return NULL;
+}
+
 /* Clones the current process as `name`. Returns the new process's thread id, or
  * TID_ERROR if the thread cannot be created. */
 /* 현재 프로세스를 `name`으로 복제합니다.
@@ -98,8 +111,17 @@ initd (void *f_name) {
 tid_t
 process_fork (const char *name, struct intr_frame *if_ UNUSED) {
 	/* Clone current thread to new thread.*/
-	return thread_create (name,
-			PRI_DEFAULT, __do_fork, thread_current ());
+	struct thread *parent = thread_current();
+	memcpy(&parent->parent_if, if_, sizeof(struct intr_frame));
+	tid_t pid = thread_create (name,
+			PRI_DEFAULT, __do_fork, parent);
+	if(pid == TID_ERROR){
+		return TID_ERROR;
+	}
+	struct thread *child = get_child(pid);
+	sema_down(&child->sema_fork);
+
+	return pid;
 }
 
 #ifndef VM
@@ -117,24 +139,37 @@ duplicate_pte (uint64_t *pte, void *va, void *aux) {
 
 	/* 1. TODO: If the parent_page is kernel page, then return immediately. */
 	/* parent_page가 커널 페이지이면 즉시 반환합니다. */
+	if (is_kernel_vaddr(va)){
+		return false;
+	}
 
 	/* 2. Resolve VA from the parent's page map level 4. */
 	/* 2. 부모의 페이지 맵 레벨 4에서 VA를 해결합니다. */
 	parent_page = pml4_get_page (parent->pml4, va);
+	if (parent_page == NULL){
+		return false;
+	}
 
 	/* 3. TODO: Allocate new PAL_USER page for the child and set result to
 				자식에 대해 새 PAL_USER 페이지를 할당하고 결과를 NEWPAGE로 설정합니다.
 	*/
+	newpage = palloc_get_page(PAL_USER | PAL_ZERO);
+	if (newpage == NULL){
+		return false;
+	}
 
 	/* 4. TODO: Duplicate parent's page to the new page and
 	 *    TODO: check whether parent's page is writable or not (set WRITABLE
 	 *    TODO: according to the result). 
 	 * 	  부모 페이지를 새 페이지에 복제하고 부모 페이지가 쓰기 가능한지 여부를 확인합니다(결과에 따라 WRITABLE 설정). */
+	memcpy(newpage, parent_page, PGSIZE);
+	writable = is_writable(pte);
 
 	/* 5. Add new page to child's page table at address VA with WRITABLE
 	 *    permission. */
 	if (!pml4_set_page (current->pml4, va, newpage, writable)) {
 		/* 6. TODO: if fail to insert page, do error handling. */
+		return false;
 	}
 	return true;
 }
@@ -182,7 +217,17 @@ __do_fork (void *aux) {
 	/* 힌트) 파일 객체를 복제하려면 include/filesys/file.h에서 `file_duplicate`를 사용하세요.
 	이 함수가 부모의 리소스를 성공적으로 복제할 때까지 부모는 fork()에서 반환해서는 안 됩니다.
 	*/
-
+	current -> file_descriptor_table[0] = parent->file_descriptor_table[0];
+	current -> file_descriptor_table[1] = parent->file_descriptor_table[1];
+	for (int i = 2; i < MAX_FD_NUM; i++){
+		struct file *f = parent->file_descriptor_table[i];
+		if (f == NULL){
+			continue;
+		}
+		current -> file_descriptor_table[i] = file_duplicate(f);
+	}
+	sema_up(&current -> sema_fork);
+	if_.R.rax = 0;
 	process_init ();
 
 	/* Finally, switch to the newly created process. */
