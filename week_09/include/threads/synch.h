@@ -8,7 +8,6 @@
 struct semaphore {
 	unsigned value;             /* Current value. */
 	struct list waiters;        /* 대기 중인 스레드 목록. */
-	// unsigned sema_fork;
 };
 
 void sema_init (struct semaphore *, unsigned value);

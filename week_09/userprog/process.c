@@ -35,6 +35,7 @@ process_init (void) {
 	struct thread *current = thread_current ();
 }
 
+
 /* Starts the first userland program, called "initd", loaded from FILE_NAME.
  * The new thread may be scheduled (and may even exit)
  * before process_create_initd() returns. Returns the initd's
@@ -96,7 +97,9 @@ thread *get_child (int pid){
 	struct list *child_list = &curr->child_list;
 	for(struct list_elem *e = list_begin(child_list); e != list_end(child_list); e = list_next(e)){
 		struct thread *t = list_entry(e, struct thread, child_list_elem);
+		// printf("야이씨tid%d, pid%d\n", t->tid, pid);
 		if(t->tid == pid){
+				
 			return t;
 		}
 	}
@@ -140,7 +143,7 @@ duplicate_pte (uint64_t *pte, void *va, void *aux) {
 	/* 1. TODO: If the parent_page is kernel page, then return immediately. */
 	/* parent_page가 커널 페이지이면 즉시 반환합니다. */
 	if (is_kernel_vaddr(va)){
-		return false;
+		return true;
 	}
 
 	/* 2. Resolve VA from the parent's page map level 4. */
@@ -189,10 +192,14 @@ __do_fork (void *aux) {
 	struct thread *current = thread_current ();
 	/* TODO: somehow pass the parent_if. (i.e. process_fork()'s if_) */
 	struct intr_frame *parent_if;
+
+	parent_if = &parent -> parent_if;
+
 	bool succ = true;
 
 	/* 1. Read the cpu context to local stack. */
 	memcpy (&if_, parent_if, sizeof (struct intr_frame));
+	if_.R.rax = 0;
 
 	/* 2. Duplicate PT */
 	current->pml4 = pml4_create();
@@ -227,7 +234,6 @@ __do_fork (void *aux) {
 		current -> file_descriptor_table[i] = file_duplicate(f);
 	}
 	sema_up(&current -> sema_fork);
-	if_.R.rax = 0;
 	process_init ();
 
 	/* Finally, switch to the newly created process. */
@@ -298,19 +304,36 @@ process_wait (tid_t child_tid UNUSED) {
 	 * XXX:       implementing the process_wait. */
 	/* XXX: 힌트) pintos exit if process_wait(initd), process_wait를 구현하기 전에 여기에 
 	무한 루프를 추가하는 것이 좋습니다. */
+	struct thread *child = get_child(child_tid);
+	// printf("3333333333333333\n");
+	if (child == NULL){
+		// printf("2222222\n");
+		return -1;
+	}
+	// printf("3333312413243333333\n");
+	// if (child->is_waited){
+	// 	return -1;
+	// }
+	// else {
+	// 	child -> is_waited = true;
+	// }
+	sema_down(&child -> sema_wait);
+	int exit_status = child -> exit_status;
+	list_remove(&child->child_list_elem);
+	sema_up(&child -> sema_free);
 	
 	// while (1){}
-	thread_set_priority(thread_get_priority()-1);
+	// thread_set_priority(thread_get_priority()-1);
 
 	// struct thread *child = get_child(child_tid);
-
+	return exit_status;
 	
 }
 
 /* Exit the process. This function is called by thread_exit (). */
 void
 process_exit (void) {
-	struct thread *curr = thread_current ();
+	struct thread *curr = thread_current () ;
 	/* TODO: Your code goes here.
 	 * TODO: Implement process termination message (see
 	 * TODO: project2/process_termination.html).
@@ -318,6 +341,13 @@ process_exit (void) {
 	/* TODO: 코드가 여기에 갑니다.
 	 * TODO: 프로세스 종료 메시지 구현(project2/process_termination.html 참조).
 	 * TODO: 여기에서 프로세스 리소스 정리를 구현하는 것이 좋습니다. */
+	for (int i = 2; i < MAX_FD_NUM; i ++){
+		close_syscall(i);
+	}
+	sema_up(&curr->sema_wait);
+	sema_up(&curr->sema_fork);
+	sema_down(&curr->sema_free);
+	palloc_free_page(curr->file_descriptor_table);
 
 	process_cleanup ();
 }

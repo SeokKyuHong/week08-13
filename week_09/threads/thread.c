@@ -312,6 +312,9 @@ thread_create (const char *name, int priority,
 	t -> file_descriptor_table[0] = 1;	//stdin 자리 : 1 
 	t -> file_descriptor_table[1] = 2;	//stdout 자리 : 2
 
+	struct thread *curr = thread_current();
+	list_push_back(&curr -> child_list, &t->child_list_elem); 
+
 	/* Call the kernel_thread if it scheduled.
 		* Note) rdi is 1st argument, and rsi is 2nd argument. */
 	/* 예약된 경우 kernel_thread를 호출합니다.
@@ -590,8 +593,14 @@ init_thread (struct thread *t, const char *name, int priority) {
 
 	/*project 2*/
 	t->exit_status = 0;
-	t->sema_fork.value = 0;
 	list_init(&t->child_list);
+	sema_init(&t->sema_fork, 0);
+
+	t->is_waited = false;
+	sema_init(&t->sema_wait, 0);
+	sema_init(&t->sema_free, 0);
+
+
 
 }
 

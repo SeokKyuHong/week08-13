@@ -12,6 +12,7 @@
 #include "filesys/filesys.h"
 #include "kernel/stdio.h"
 #include "filesys/file.h"
+#include "user/syscall.h"
 
 
 void syscall_entry (void);
@@ -32,6 +33,7 @@ void check_address (const uint64_t *addr);
 struct file *fd_to_struct_filep (int fd);
 void remove_file_from_fd_table(int fd);
 int fork_syscall(const char *thread_name, struct intr_frame *f);
+int wait_syscall (pid_t pid); 
 
 
 
@@ -157,9 +159,9 @@ syscall_handler (struct intr_frame *f UNUSED) {
 			f->R.rax = exec_syscall(f->R.rdi);
 		break;
 
-		// case SYS_WAIT :
-		// 	f->R.rax = wait_syscall(f->R.rdi);
-		// break;
+		case SYS_WAIT :
+			f->R.rax = wait_syscall(f->R.rdi);
+		break;
 
 		// 파일 이름과 파일 사이즈를 인자 값으로 받아 파일을 생성하는 함수.
 		case SYS_CREATE : 
@@ -244,7 +246,7 @@ remove_syscall (const char *file) {
 // 현재 프로세스를 cmd_line에서 지정된 인수를 전달하여 이름이 지정된 실행 파일로 변경
 int
 exec_syscall (char *file) {
-	check_address(file);
+	// check_address(file);
 
 	int file_size = strlen(file)+1;
 	char *fn_copy = palloc_get_page(PAL_ZERO); // 파일 네임 카피
@@ -405,5 +407,10 @@ close_syscall (int fd) {
 	file_close(close_file);
 	lock_release(&filesys_lock);
 	remove_file_from_fd_table(fd);
+}
+
+int
+wait_syscall (pid_t pid) {
+	return process_wait(pid);
 }
 
