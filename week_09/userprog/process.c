@@ -97,7 +97,6 @@ thread *get_child (int pid){
 	struct list *child_list = &curr->child_list;
 	for(struct list_elem *e = list_begin(child_list); e != list_end(child_list); e = list_next(e)){
 		struct thread *t = list_entry(e, struct thread, child_list_elem);
-		// printf("야이씨tid%d, pid%d\n", t->tid, pid);
 		if(t->tid == pid){
 				
 			return t;
@@ -270,6 +269,8 @@ process_exec (void *f_name) { 				//실행함수
 	/*---------------------------------*/
 	// hex_dump(_if.rsp, _if.rsp, USER_STACK - (_if.rsp), true);
 
+	// printf("tid: %d\n", thread_current()->tid);
+
 	/*---------------------------------*/
 	if (!success)
 		return -1;
@@ -311,12 +312,12 @@ process_wait (tid_t child_tid UNUSED) {
 		return -1;
 	}
 	// printf("3333312413243333333\n");
-	// if (child->is_waited){
-	// 	return -1;
-	// }
-	// else {
-	// 	child -> is_waited = true;
-	// }
+	if (child->is_waited){
+		return -1;
+	}
+	else {
+		child -> is_waited = true;
+	}
 	sema_down(&child -> sema_wait);
 	int exit_status = child -> exit_status;
 	list_remove(&child->child_list_elem);
