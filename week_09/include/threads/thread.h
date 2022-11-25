@@ -113,12 +113,15 @@ struct thread {
 	int fdidx;
 
 	/*프로젝트 2 -- fork 관련*/
-	tid_t pid;
 
 	struct semaphore sema_fork;
 	struct intr_frame parent_if;
 	struct list child_list;
 	struct list_elem child_list_elem;
+
+	bool is_waited;
+	struct semaphore sema_wait;
+	struct semaphore sema_free;
 
 
 #ifdef USERPROG
