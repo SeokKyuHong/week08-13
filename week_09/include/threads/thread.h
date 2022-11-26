@@ -123,6 +123,9 @@ struct thread {
 	struct semaphore sema_wait;
 	struct semaphore sema_free;
 
+	/*프로젝트 2 rox 케이스*/
+	// struct file 
+
 
 #ifdef USERPROG
 	/* Owned by userprog/process.c. */

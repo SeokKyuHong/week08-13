@@ -17,8 +17,7 @@ void
 test_main (void) 
 {
   pid_t children[CHILD_CNT];
-  int fd;
-
+  int fd; 
   CHECK (create (file_name, sizeof buf), "create \"%s\"", file_name);
   CHECK ((fd = open (file_name)) > 1, "open \"%s\"", file_name);
   random_bytes (buf, sizeof buf);

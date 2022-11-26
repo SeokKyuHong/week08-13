@@ -246,7 +246,7 @@ remove_syscall (const char *file) {
 // 현재 프로세스를 cmd_line에서 지정된 인수를 전달하여 이름이 지정된 실행 파일로 변경
 int
 exec_syscall (char *file) {
-	// check_address(file);
+	check_address(file);
 
 	int file_size = strlen(file)+1;
 	char *fn_copy = palloc_get_page(PAL_ZERO); // 파일 네임 카피
@@ -380,7 +380,6 @@ seek_syscall (int fd, unsigned position) {
 	// if (file == NULL){
 	// 	return;
 	// }
-	
 	file_seek(file, position);
 }
 

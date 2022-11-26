@@ -273,6 +273,7 @@ process_exec (void *f_name) { 				//실행함수
 
 	/*---------------------------------*/
 	if (!success)
+		
 		return -1;
 
 	/* If load failed, quit. */
@@ -477,6 +478,7 @@ load (const char *file_name, struct intr_frame *if_) {
 	/* Allocate and activate page directory. */
 	t->pml4 = pml4_create ();
 	if (t->pml4 == NULL)
+	
 		goto done;
 	process_activate (thread_current ());
 
@@ -515,7 +517,7 @@ load (const char *file_name, struct intr_frame *if_) {
 		printf ("load: %s: error loading executable\n", file_name);
 		goto done;
 	}
-
+	
 	/* Read program headers. */
 	file_ofs = ehdr.e_phoff;
 	for (i = 0; i < ehdr.e_phnum; i++) {
@@ -568,6 +570,7 @@ load (const char *file_name, struct intr_frame *if_) {
 				break;
 		}
 	}
+
 
 	/* Set up stack. */
 	if (!setup_stack (if_))
@@ -642,13 +645,14 @@ load (const char *file_name, struct intr_frame *if_) {
 	if_->rsp -= curr;
 	if_->R.rdi = argc;
 	if_->R.rsi = (if_->rsp)+8;
-	
+
 /*--------------------------------------------------*/
 	success = true;
-
+	
 done:
 	/* We arrive here whether the load is successful or not. */
 	file_close (file);
+	// printf("요기야?%d\n", success);
 	return success;
 }
 
