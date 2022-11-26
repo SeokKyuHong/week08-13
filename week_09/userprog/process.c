@@ -352,6 +352,7 @@ process_exit (void) {
 	palloc_free_page(curr->file_descriptor_table);
 
 	process_cleanup ();
+	// file_close(curr->name); // rox
 }
 
 /* Free the current process's resources. */
@@ -501,6 +502,7 @@ load (const char *file_name, struct intr_frame *if_) {
 
 	/* Open executable file. */
 	file = filesys_open (file_name);
+
 	if (file == NULL) {
 		printf ("load: %s: open failed\n", file_name);
 		goto done;
@@ -651,7 +653,8 @@ load (const char *file_name, struct intr_frame *if_) {
 	
 done:
 	/* We arrive here whether the load is successful or not. */
-	file_close (file);
+
+	file_close (file); // rox 떄문에 주석!
 	// printf("요기야?%d\n", success);
 	return success;
 }

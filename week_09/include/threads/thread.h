@@ -124,7 +124,7 @@ struct thread {
 	struct semaphore sema_free;
 
 	/*프로젝트 2 rox 케이스*/
-	// struct file 
+	// struct file **executable;
 
 
 #ifdef USERPROG

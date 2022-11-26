@@ -601,6 +601,8 @@ init_thread (struct thread *t, const char *name, int priority) {
 	sema_init(&t->sema_wait, 0);
 	sema_init(&t->sema_free, 0);
 
+	/*project2 : rox*/
+	// t->executable = NULL;
 
 
 }

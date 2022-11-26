@@ -296,6 +296,11 @@ open_syscall (const char *file) {
 	check_address(file);
 	lock_acquire(&filesys_lock);
 	struct file *open_file = filesys_open(file); //오픈 파일 객체정보를 저장
+	/*rox*/
+	if (strcmp(thread_current()->name, file) == 0){
+		file_deny_write (open_file); 
+	}
+
 	lock_release(&filesys_lock);
 	
 	if(open_file == NULL){
@@ -398,6 +403,7 @@ tell_syscall (int fd) {
 
 void
 close_syscall (int fd) {
+	
 	struct file *close_file = fd_to_struct_filep(fd);
 	if (close_file == NULL){
 		return ;
