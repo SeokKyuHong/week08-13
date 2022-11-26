@@ -120,8 +120,8 @@ struct thread {
 	struct list_elem child_list_elem;
 
 	bool is_waited;						//waited 불렸는지 아닌지(기다리라고 했다면 true)
-	struct semaphore sema_wait;			//wait 작업을 하기 위한 sema
-	struct semaphore sema_free;
+	struct semaphore sema_wait;			//자식이 끝날때 까지 대기하기 위한 sema
+	struct semaphore sema_free;			//process_exit를 하기 전에 자식의 exit_status를 체크하기 위한 sema
 
 
 #ifdef USERPROG
