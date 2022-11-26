@@ -120,23 +120,27 @@ make_children (void) {
 
     snprintf (child_name, sizeof child_name, "%s_%d_%s", "child", i, "O");
     pid = fork(child_name);
+    
     if (pid < 0) {
       exit (i);
     } else if (pid == 0) {
+      // msg("Tlllddkijef838 %d\n", pid);
       consume_some_resources();
     } else {
       break;
     }
   }
-
+  // msg("pid 가 뭐니>? %d\n", pid);
   int depth = wait (pid);
   if (depth < 0)
 	  fail ("Should return > 0.");
 
   if (i == 0)
 	  return depth;
-  else
+  else{
+    // msg("i 가 뭐니 %d \n", depth);
 	  exit (depth);
+  }
 }
 
 int

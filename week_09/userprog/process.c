@@ -115,14 +115,13 @@ process_fork (const char *name, struct intr_frame *if_ UNUSED) {
 	/* Clone current thread to new thread.*/
 	struct thread *parent = thread_current();
 	memcpy(&parent->parent_if, if_, sizeof(struct intr_frame));
-	tid_t pid = thread_create (name,
-			PRI_DEFAULT, __do_fork, parent);
+	tid_t pid = thread_create (name, PRI_DEFAULT, __do_fork, parent);
 	if(pid == TID_ERROR){
 		return TID_ERROR;
 	}
 	struct thread *child = get_child(pid);
 	sema_down(&child->sema_fork);
-
+	// printf("fork의 pid %d\n", pid);
 	return pid;
 }
 
@@ -188,11 +187,11 @@ static void
 __do_fork (void *aux) {
 	struct intr_frame if_;
 	struct thread *parent = (struct thread *) aux;
-	struct thread *current = thread_current ();
+	struct thread *current = thread_current ();  //자식 프로세스임
 	/* TODO: somehow pass the parent_if. (i.e. process_fork()'s if_) */
 	struct intr_frame *parent_if;
 
-	parent_if = &parent -> parent_if;
+	parent_if = &parent->parent_if;
 
 	bool succ = true;
 
@@ -223,6 +222,10 @@ __do_fork (void *aux) {
 	/* 힌트) 파일 객체를 복제하려면 include/filesys/file.h에서 `file_duplicate`를 사용하세요.
 	이 함수가 부모의 리소스를 성공적으로 복제할 때까지 부모는 fork()에서 반환해서는 안 됩니다.
 	*/
+	if(parent -> fdidx >= MAX_FD_NUM){
+		goto error;
+	}
+
 	current -> file_descriptor_table[0] = parent->file_descriptor_table[0];
 	current -> file_descriptor_table[1] = parent->file_descriptor_table[1];
 	for (int i = 2; i < MAX_FD_NUM; i++){
@@ -232,6 +235,8 @@ __do_fork (void *aux) {
 		}
 		current -> file_descriptor_table[i] = file_duplicate(f);
 	}
+
+	current -> fdidx = parent -> fdidx;
 	sema_up(&current -> sema_fork);
 	process_init ();
 
@@ -239,7 +244,8 @@ __do_fork (void *aux) {
 	if (succ)
 		do_iret (&if_);
 error:
-	thread_exit ();
+	// thread_exit ();
+	exit_syscall(-1);
 }
 
 /* Switch the current execution context to the f_name.
@@ -301,34 +307,29 @@ TID가 유효하지 않거나 호출 프로세스의 자식이 아니거나 주�
 이 기능은 문제 2-2에서 구현될 것이다. 현재로서는 아무 작업도 수행하지 않습니다. */
 int
 process_wait (tid_t child_tid UNUSED) {
-	/* XXX: Hint) The pintos exit if process_wait (initd), we recommend you
-	 * XXX:       to add infinite loop here before
-	 * XXX:       implementing the process_wait. */
 	/* XXX: 힌트) pintos exit if process_wait(initd), process_wait를 구현하기 전에 여기에 
 	무한 루프를 추가하는 것이 좋습니다. */
-	struct thread *child = get_child(child_tid);
-	// printf("3333333333333333\n");
-	if (child == NULL){
-		// printf("2222222\n");
+	struct thread *child = get_child(child_tid);	//넘어온 tid 값과 같은 자식 리스트의 스레드를 가져온다.
+
+	if (child == NULL){							//없다면 리턴 -1
 		return -1;
 	}
-	// printf("3333312413243333333\n");
-	if (child->is_waited){
+	if (child->is_waited){						//아직 기다리라고 한 자식이면 리턴 -1
 		return -1;
 	}
-	else {
-		child -> is_waited = true;
-	}
-	sema_down(&child -> sema_wait);
+	else {										//자식이 있고 기다리라고 했던 적이 없다면 
+		child -> is_waited = true;				//자식을 기다리라고 한다. 
+	}	
+	sema_down(&child -> sema_wait);				//자식이 wait 상태인동안 잠거둠 
 	int exit_status = child -> exit_status;
 	list_remove(&child->child_list_elem);
 	sema_up(&child -> sema_free);
-	
+	// printf("wait쪽 pid %d\n",child->tid);
 	// while (1){}
 	// thread_set_priority(thread_get_priority()-1);
 
 	// struct thread *child = get_child(child_tid);
-	return exit_status;
+	return exit_status;			// 종료 상태를 리턴
 	
 }
 
@@ -346,13 +347,14 @@ process_exit (void) {
 	for (int i = 2; i < MAX_FD_NUM; i ++){
 		close_syscall(i);
 	}
+
+	palloc_free_multiple(curr->file_descriptor_table, FDT_PAGES); //멀티풀로 교체 
+	process_cleanup ();
+	
 	sema_up(&curr->sema_wait);
 	sema_up(&curr->sema_fork);
 	sema_down(&curr->sema_free);
-	palloc_free_page(curr->file_descriptor_table);
 
-	process_cleanup ();
-	// file_close(curr->name); // rox
 }
 
 /* Free the current process's resources. */
@@ -360,7 +362,6 @@ process_exit (void) {
 static void
 process_cleanup (void) {
 	struct thread *curr = thread_current ();
-
 #ifdef VM
 	supplemental_page_table_kill (&curr->spt);
 #endif

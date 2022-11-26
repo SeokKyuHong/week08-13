@@ -109,22 +109,19 @@ struct thread {
 
 	/*프로젝트 2*/
 	int exit_status;			//스레드 종료 상태 체크 
-	struct file **file_descriptor_table;
+	struct file **file_descriptor_table;	//
 	int fdidx;
 
 	/*프로젝트 2 -- fork 관련*/
 
-	struct semaphore sema_fork;
-	struct intr_frame parent_if;
-	struct list child_list;
+	struct semaphore sema_fork;			//포크작업을 위한 sema
+	struct intr_frame parent_if;		//부모의 인터럽트 프레임 정보 저장
+	struct list child_list;				//자식 리스트
 	struct list_elem child_list_elem;
 
-	bool is_waited;
-	struct semaphore sema_wait;
+	bool is_waited;						//waited 불렸는지 아닌지(기다리라고 했다면 true)
+	struct semaphore sema_wait;			//wait 작업을 하기 위한 sema
 	struct semaphore sema_free;
-
-	/*프로젝트 2 rox 케이스*/
-	// struct file **executable;
 
 
 #ifdef USERPROG
