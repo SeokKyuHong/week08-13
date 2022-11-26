@@ -205,6 +205,12 @@ more(const struct list_elem *a, const struct list_elem *b, void *aux){
 	return list_entry (a, struct thread, elem) -> priority
 			> list_entry (b, struct thread, elem) -> priority;
 }
+bool
+more_exit(const struct list_elem *a, const struct list_elem *b, void *aux){
+	return list_entry (a, struct thread, elem) -> exit_status
+			> list_entry (b, struct thread, elem) -> exit_status;
+}
+
 
 /* Starts preemptive thread scheduling by enabling interrupts.
    Also creates the idle thread. */
@@ -314,7 +320,7 @@ thread_create (const char *name, int priority,
 
 	struct thread *curr = thread_current();
 	list_push_back(&curr -> child_list, &t->child_list_elem); 
-	// printf("");
+	// list_insert_ordered (&curr -> child_list, &t->child_list_elem, more_exit, 0);
 
 	/* Call the kernel_thread if it scheduled.
 		* Note) rdi is 1st argument, and rsi is 2nd argument. */
@@ -592,7 +598,8 @@ init_thread (struct thread *t, const char *name, int priority) {
 	t->wait_lock = NULL;
 	list_init(&t->dona);
 
-	/*project 2*/
+	/*project 2 
+	sema는 다운(0)하여 초기화*/
 	t->exit_status = 0;
 	list_init(&t->child_list);
 	sema_init(&t->sema_fork, 0);
@@ -601,8 +608,6 @@ init_thread (struct thread *t, const char *name, int priority) {
 	sema_init(&t->sema_wait, 0);
 	sema_init(&t->sema_free, 0);
 
-	/*project2 : rox*/
-	// t->executable = NULL;
 
 
 }

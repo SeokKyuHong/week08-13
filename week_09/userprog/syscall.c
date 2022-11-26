@@ -212,6 +212,7 @@ syscall_handler (struct intr_frame *f UNUSED) {
 // 프로세스 종료 시스템 콜
 void
 exit_syscall (int status) {
+	// printf("status!@!: %d\n", status);
 	struct thread *t = thread_current();
 	t->exit_status = status;
 	printf("%s: exit(%d)\n", t->name, status); 
