@@ -55,7 +55,7 @@ process_create_initd (const char *file_name) {
 	 * Otherwise there's a race between the caller and load(). */
 	/* FILE_NAME의 복사본을 만듭니다.
 	 그렇지 않으면 호출자와 load() 사이에 경쟁이 있습니다. */
-	fn_copy = palloc_get_page (0);
+	fn_copy = palloc_get_page (0); // 커널 가상 주소 반환
 	if (fn_copy == NULL)
 		return TID_ERROR;
 	strlcpy (fn_copy, file_name, PGSIZE); 			// 2번을 1번으로 3번의 사이즈만큼 복사
@@ -320,10 +320,10 @@ process_wait (tid_t child_tid UNUSED) {
 	else {										//자식이 있고 기다리라고 했던 적이 없다면 
 		child -> is_waited = true;				//자식을 기다리라고 한다. 
 	}	
-	sema_down(&child -> sema_wait);				//자식이 wait 상태인동안 잠거둠 
+	sema_down(&child -> sema_wait);				//자식이 wait 상태인동안 인터럽트 활성화
 	int exit_status = child -> exit_status;
-	list_remove(&child->child_list_elem);
-	sema_up(&child -> sema_free);
+	list_remove(&child->child_list_elem);		//자식 제거
+	sema_up(&child -> sema_free);				//free할 수 있도록 인터럽트 해제
 	// printf("wait쪽 pid %d\n",child->tid);
 	// while (1){}
 	// thread_set_priority(thread_get_priority()-1);
@@ -588,12 +588,11 @@ load (const char *file_name, struct intr_frame *if_) {
 	//1. 첫 주소 부터 글자의 길이(끝에 \0포함) 만큼 넣어준다
 	//	글자 길이 만큼 저장 위치가 감소 해야 한다. (거꾸로)
 	//	argv[0]까지 = RDI: 4
-
 	uintptr_t start_p = (if_ -> rsp);
-	// printf("**start_addr** : %p\n", start_p) ;
 	size_t curr = 0;
 	char *address[64];
 
+	/*argc 자른 마디의 개수만큼 for문 돌린다.*/
 	for (int i = argc - 1; i != -1; i--)
 	{
 		size_t argv_size = (strlen(argv[i]) + 1);
@@ -601,49 +600,31 @@ load (const char *file_name, struct intr_frame *if_) {
 		address[i] = (start_p - curr);
 		
 		memcpy ((start_p-curr), argv[i], argv_size);
-		// start_p -= curr;
-		
-		// printf("**USER_STACK** : %p\n", start_p) ;
 	}
 
 	//2. 마지막에 word-align = 0 으로 채운다 (8의 배수로 체운다)
-	// uintptr_t word_align_addr = (start_p-curr);
 
 	size_t word_align_size = (start_p-curr) % 8;
 
 	curr += word_align_size;
 	memset(start_p - curr, '\0', word_align_size);
 
-	// printf("**word_align_addr** : %p\n", start_p) ;
-
-	// uintptr_t last_argv_addr = (start_p-word_align);
-
 	curr += 8;
 	memset(start_p - curr, 0, 8);
 
-	// printf("**last_argv_addr** : %p\n", start_p) ;
-
-	
-
 	//3. argv의 주소값을 뒤에서부터 하나씩 넣는다
 	//	주소는 8바이트씩 넣는다. 
-	// uintptr_t addr_data = (last_argv_addr - 8);
 	for (int j = argc-1; j != -1; j--)
 	{
-		// uintptr_t addr_curr = address[j];
 		size_t argv_size = 8;
 		curr += argv_size;
 		
 		memcpy ((start_p-curr), &address[j], argv_size);
-		
-		// printf("**addr_data-curr_1** : %p .. %p\n", start_p, address[j]) ;
 	}
 
 	//4. 마지막에 Return address 를 0으로 넣는다. 
-	// uintptr_t return_addr = (addr_data - curr_1);
 	curr += 8;
 	memset(start_p-curr, 0, 8);
-	// printf("**Return address** : %p\n", start_p) ;
 
 	if_->rsp -= curr;
 	if_->R.rdi = argc;
