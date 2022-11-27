@@ -59,14 +59,11 @@ void
 check_address (const uint64_t *addr)
 {
 	struct thread *cur = thread_current();
+	//유저영역의 주소가 아니거나, 물리주소와 맵핑되어 있는 페이지가 없다면 프로세스를 종료 시킨다.
 	if (!(is_user_vaddr(addr)) || pml4_get_page(cur -> pml4, addr) == NULL)
 	{
-		// printf("__________********__________\n");
 		exit_syscall(-1);
 	}
-	// if (addr == NULL){
-	// 	return ;
-	// }
 }
 
 int 
@@ -212,9 +209,8 @@ syscall_handler (struct intr_frame *f UNUSED) {
 // 프로세스 종료 시스템 콜
 void
 exit_syscall (int status) {
-	// printf("status!@!: %d\n", status);
 	struct thread *t = thread_current();
-	t->exit_status = status;
+	t->exit_status = status;	//해당 종료 상태값을 스레드에 저장
 	printf("%s: exit(%d)\n", t->name, status); 
 	thread_exit ();
 }
@@ -227,9 +223,8 @@ fork_syscall(const char *thread_name, struct intr_frame *f){
 // 파일 이름과 파일 사이즈를 인자 값으로 받아 파일을 생성하는 함수.
 bool
 create_syscall (char *file, unsigned initial_size) {
-	// 파일이름과 사이즈를 받아 파일을 생성해 주는 함수 
 	check_address(file);
-	lock_acquire(&filesys_lock);
+	lock_acquire(&filesys_lock);	//file 관련 함수를 호출 시 동시성 보장을 위해 락을 요청 
 	bool return_value = filesys_create(file, initial_size);
 	lock_release(&filesys_lock);
 	return return_value;
@@ -272,9 +267,9 @@ write_syscall (int fd, const void *buffer, unsigned size){
 	if (fd == STDIN_FILENO){
 		return 0;
 	}
-	else if (fd == STDOUT_FILENO){
+	else if (fd == STDOUT_FILENO){	//out 일때
 		
-		putbuf(buffer, size);
+		putbuf(buffer, size);	
 		
 		return size;
 	}
@@ -295,13 +290,12 @@ write_syscall (int fd, const void *buffer, unsigned size){
 int
 open_syscall (const char *file) {
 	check_address(file);
-	lock_acquire(&filesys_lock);
+	lock_acquire(&filesys_lock);         
 	struct file *open_file = filesys_open(file); //오픈 파일 객체정보를 저장
 	/*rox*/
 	if (strcmp(thread_current()->name, file) == 0){
 		file_deny_write (open_file); 
 	}
-
 	lock_release(&filesys_lock);
 	
 	if(open_file == NULL){
@@ -319,7 +313,6 @@ open_syscall (const char *file) {
 
 int
 filesize_syscall (int fd) {
-	// check_address(fd);
 	struct file *fileobj = fd_to_struct_filep(fd);
 	if (fileobj == NULL){
 		return -1;
@@ -332,63 +325,36 @@ filesize_syscall (int fd) {
 
 int
 read_syscall (int fd, void *buffer, unsigned size) {
-	// printf("-------------*****_________\n");
 	check_address(buffer);
-	check_address(buffer + size -1);
-	// unsigned char *buf = buffer;
+	// check_address(buffer + size -1);
 
 	int read_count;
-
 	struct file *fileobj = fd_to_struct_filep(fd);
 
 	if (fileobj == NULL){
 		return -1;
 	}
 
-	//stdin일때
-	if (fd == STDIN_FILENO){
-		char key;
-		for (read_count = 0; read_count < size; read_count++){
-			key = input_getc();
-			// *buf++ = key;
-			if (key == '\0'){
-				break;
-			}
-		}
-	}
-	else if (fd == STDOUT_FILENO){
+	if (fd == STDOUT_FILENO){
 		return -1;
 	}
-	else {
-		// struct file *read_file = fd_to_struct_filep(fd);
-		// if (fileobj == NULL){
-		// 	return -1;
-		// }
-		
-		lock_acquire(&filesys_lock);
-		read_count = file_read(fileobj, buffer, size);
-		lock_release(&filesys_lock);
-	}
+	lock_acquire(&filesys_lock);
+	read_count = file_read(fileobj, buffer, size);
+	lock_release(&filesys_lock);
+
 	return read_count;
 }
 
+//파일 위치 이동
 void
 seek_syscall (int fd, unsigned position) {
 	
-	// if (fd < 2){
-		
-	// 	return;
-	// }
 	struct file *file = fd_to_struct_filep(fd);
-	
-	// check_address(file);
-	
-	// if (file == NULL){
-	// 	return;
-	// }
+
 	file_seek(file, position);
 }
 
+//열린 파일의 위치를 알려준다. 
 unsigned
 tell_syscall (int fd) {
 	if (fd < 2){
@@ -402,6 +368,7 @@ tell_syscall (int fd) {
 	return file_tell(fd);
 }
 
+//파일을 닫고 fd_table도 NULL로 초기화
 void
 close_syscall (int fd) {
 	
