@@ -139,6 +139,7 @@ puts (const char *s) {
 }
 
 /* Writes the N characters in BUFFER to the console. */
+/* BUFFER의 N 문자를 콘솔에 씁니다. */
 void
 putbuf (const char *buffer, size_t n) {
 	acquire_console ();
@@ -168,6 +169,8 @@ vprintf_helper (char c, void *char_cnt_) {
 /* Writes C to the vga display and serial port.
    The caller has already acquired the console lock if
    appropriate. */
+/* vga 디스플레이와 직렬 포트에 C를 씁니다.
+    호출자는 이미 적절한 콘솔 잠금을 획득했습니다. */
 static void
 putchar_have_lock (uint8_t c) {
 	ASSERT (console_locked_by_current_thread ());

@@ -114,14 +114,13 @@ tid_t
 process_fork (const char *name, struct intr_frame *if_ UNUSED) {
 	/* Clone current thread to new thread.*/
 	struct thread *parent = thread_current();
-	memcpy(&parent->parent_if, if_, sizeof(struct intr_frame));
+	memcpy(&parent->parent_if, if_, sizeof(struct intr_frame));	//부모의 if 를 부모의 parent_if에 저장
 	tid_t pid = thread_create (name, PRI_DEFAULT, __do_fork, parent);
 	if(pid == TID_ERROR){
 		return TID_ERROR;
 	}
 	struct thread *child = get_child(pid);
 	sema_down(&child->sema_fork);
-	// printf("fork의 pid %d\n", pid);
 	return pid;
 }
 
@@ -588,31 +587,30 @@ load (const char *file_name, struct intr_frame *if_) {
 	//1. 첫 주소 부터 글자의 길이(끝에 \0포함) 만큼 넣어준다
 	//	글자 길이 만큼 저장 위치가 감소 해야 한다. (거꾸로)
 	//	argv[0]까지 = RDI: 4
-	uintptr_t start_p = (if_ -> rsp);
-	size_t curr = 0;
-	char *address[64];
+	uintptr_t start_p = (if_ -> rsp);	//초기 시작 포인터 저장
+	uintptr_t curr = 0;	//계속 갱신 되는 임시 포인터 
+	char *address[64];	//argv의 주소값을 저장할 배열
 
 	/*argc 자른 마디의 개수만큼 for문 돌린다.*/
 	for (int i = argc - 1; i != -1; i--)
 	{
-		size_t argv_size = (strlen(argv[i]) + 1);
-		curr += argv_size;
-		address[i] = (start_p - curr);
+		size_t argv_size = (strlen(argv[i]) + 1);	//memcpy를 위한 사이즈(뒤에 '/0'을 하나씩 넣기위한 +1)
+		curr += argv_size;	//임시 포인터 갱신
+		address[i] = (start_p - curr);	//나중에 주소를 저장해야 하기에 지금 주소를 저장해둠
 		
-		memcpy ((start_p-curr), argv[i], argv_size);
+		memcpy ((start_p-curr), argv[i], argv_size);	//argv[i]의 데이터를 start 포인터에 저장 
 	}
 
 	//2. 마지막에 word-align = 0 으로 채운다 (8의 배수로 체운다)
-
-	size_t word_align_size = (start_p-curr) % 8;
-
+	size_t word_align_size = (start_p-curr) % 8;	//8의 배수로 채워야 하므로 나머지 만큼만 공백으로 채움
 	curr += word_align_size;
 	memset(start_p - curr, '\0', word_align_size);
 
+	//3. argv 배열의 마지막은 0으로 채운다. 
 	curr += 8;
 	memset(start_p - curr, 0, 8);
 
-	//3. argv의 주소값을 뒤에서부터 하나씩 넣는다
+	//3-1. argv의 주소값을 뒤에서부터 하나씩 넣는다
 	//	주소는 8바이트씩 넣는다. 
 	for (int j = argc-1; j != -1; j--)
 	{
@@ -626,6 +624,7 @@ load (const char *file_name, struct intr_frame *if_) {
 	curr += 8;
 	memset(start_p-curr, 0, 8);
 
+	//5. 저장했던 임시 포인터를 실제 rsp에 적용하고 나머지 포인터들도 세팅 한다. 
 	if_->rsp -= curr;
 	if_->R.rdi = argc;
 	if_->R.rsi = (if_->rsp)+8;
@@ -636,8 +635,7 @@ load (const char *file_name, struct intr_frame *if_) {
 done:
 	/* We arrive here whether the load is successful or not. */
 
-	file_close (file); // rox 떄문에 주석!
-	// printf("요기야?%d\n", success);
+	file_close (file);
 	return success;
 }
 
