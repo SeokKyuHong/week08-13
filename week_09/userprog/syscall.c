@@ -247,7 +247,6 @@ exec_syscall (char *file) {
 	int file_size = strlen(file)+1;
 	char *fn_copy = palloc_get_page(PAL_ZERO); // 파일 네임 카피
 	if (fn_copy == NULL) {
-		// exit_syscall (-1);
 		return -1;
 	}
 	strlcpy (fn_copy, file, file_size);
@@ -255,11 +254,9 @@ exec_syscall (char *file) {
 	if (process_exec (fn_copy) == -1){
 		return -1;
 	}
-	
-	// NOT_REACHED();
-	// return 0;
 }
 
+// 
 int 
 write_syscall (int fd, const void *buffer, unsigned size){
 	
