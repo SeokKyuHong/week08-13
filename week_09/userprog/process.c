@@ -91,6 +91,7 @@ initd (void *f_name) {
 	NOT_REACHED ();
 }
 
+//실행중인 리스트의 자식들 중 인자(pid)와 같은 스레드의 pid를 반환
 struct
 thread *get_child (int pid){
 	struct thread *curr = thread_current();
@@ -119,7 +120,10 @@ process_fork (const char *name, struct intr_frame *if_ UNUSED) {
 	if(pid == TID_ERROR){
 		return TID_ERROR;
 	}
+	//생성된 스레드와 pid가 같은 스레드를 부모의 자식 리스트에서 가져온다.  
 	struct thread *child = get_child(pid);
+
+	//자식스레드를 만드는 동안 방해를 받게 하지 않기 위한 sema.  
 	sema_down(&child->sema_fork);
 	return pid;
 }
@@ -236,6 +240,8 @@ __do_fork (void *aux) {
 	}
 
 	current -> fdidx = parent -> fdidx;
+
+	//자식을 다 만들었으니 업하여 활성화 
 	sema_up(&current -> sema_fork);
 	process_init ();
 
@@ -244,6 +250,8 @@ __do_fork (void *aux) {
 		do_iret (&if_);
 error:
 	// thread_exit ();
+	//자식을 다 만들었으니 업하여 활성화 
+	sema_up(&current -> sema_fork);
 	exit_syscall(-1);
 }
 
@@ -271,12 +279,7 @@ process_exec (void *f_name) { 				//실행함수
 
 	/* And then load the binary */
 	success = load (file_name, &_if);
-	/*---------------------------------*/
-	// hex_dump(_if.rsp, _if.rsp, USER_STACK - (_if.rsp), true);
 
-	// printf("tid: %d\n", thread_current()->tid);
-
-	/*---------------------------------*/
 	if (!success)
 		
 		return -1;
@@ -323,11 +326,10 @@ process_wait (tid_t child_tid UNUSED) {
 	int exit_status = child -> exit_status;
 	list_remove(&child->child_list_elem);		//자식 제거
 	sema_up(&child -> sema_free);				//free할 수 있도록 인터럽트 해제
-	// printf("wait쪽 pid %d\n",child->tid);
+
 	// while (1){}
 	// thread_set_priority(thread_get_priority()-1);
 
-	// struct thread *child = get_child(child_tid);
 	return exit_status;			// 종료 상태를 리턴
 	
 }
@@ -340,8 +342,7 @@ process_exit (void) {
 	 * TODO: Implement process termination message (see
 	 * TODO: project2/process_termination.html).
 	 * TODO: We recommend you to implement process resource cleanup here. */
-	/* TODO: 코드가 여기에 갑니다.
-	 * TODO: 프로세스 종료 메시지 구현(project2/process_termination.html 참조).
+	/* TODO: 프로세스 종료 메시지 구현(project2/process_termination.html 참조).
 	 * TODO: 여기에서 프로세스 리소스 정리를 구현하는 것이 좋습니다. */
 	for (int i = 2; i < MAX_FD_NUM; i ++){
 		close_syscall(i);
@@ -350,8 +351,8 @@ process_exit (void) {
 	palloc_free_multiple(curr->file_descriptor_table, FDT_PAGES); //멀티풀로 교체 
 	process_cleanup ();
 	
-	sema_up(&curr->sema_wait);
-	sema_up(&curr->sema_fork);
+	sema_up(&curr->sema_wait);	//
+	// sema_up(&curr->sema_fork);
 	sema_down(&curr->sema_free);
 
 }
