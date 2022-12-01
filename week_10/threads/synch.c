@@ -194,7 +194,7 @@ lock은 현재 스레드에서 이미 보유하고 있지 않아야 합니다.
 이 함수는 인터럽트가 비활성화된 상태에서 호출될 수 있지만 잠자기 상태가 필요한 경우 인터럽트가 다시 켜집니다. */
 void
 lock_acquire (struct lock *lock) {
-	ASSERT (lock != NULL);
+	ASSERT (lock != NULL); 
 	ASSERT (!intr_context ());
 	ASSERT (!lock_held_by_current_thread (lock));
 
@@ -209,11 +209,11 @@ lock_acquire (struct lock *lock) {
 		dona_priority();				//도네이션 시작!
 	}
 	
-	sema_down (&lock->semaphore);
-	t -> wait_lock = NULL;
-	lock->holder = t;
-}
-
+	sema_down (&lock->semaphore); 
+	t -> wait_lock = NULL;  
+	lock->holder = t; 
+}      
+ 
 /* LOCK 획득을 시도하고 성공하면 true를 반환하고 실패하면 false를 반환합니다.
 lock을 현재 스레드에서 이미 보유하고 있지 않아야 합니다.
 
@@ -225,7 +225,7 @@ lock_try_acquire (struct lock *lock) {
 	ASSERT (lock != NULL);
 	ASSERT (!lock_held_by_current_thread (lock));
 
-	success = sema_try_down (&lock->semaphore);
+	success = sema_try_down (&lock->semaphore); 
 	if (success)
 		lock->holder = thread_current ();
 	return success;

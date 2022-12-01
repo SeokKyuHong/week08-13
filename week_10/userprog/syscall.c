@@ -322,7 +322,7 @@ filesize_syscall (int fd) {
 
 //읽얼꺼야
 int
- (int fd, void *buffer, unsigned size) {
+read_syscall (int fd, void *buffer, unsigned size) {
 	check_address(buffer);
 	// check_address(buffer + size -1);
 
