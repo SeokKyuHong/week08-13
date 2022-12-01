@@ -1,6 +1,8 @@
 {
     "files.associations": {
         "*.inc": "c",
-        "syscall-nr.h": "c"
+        "syscall-nr.h": "c",
+        "pte.h": "c",
+        "thread.h": "c"
     }
 }

@@ -80,6 +80,8 @@ process_create_initd (const char *file_name) {
 /* 첫 번째 사용자 프로세스를 시작하는 스레드 함수. */
 static void
 initd (void *f_name) {
+
+//새로운 페이지 테이블 초기화 
 #ifdef VM
 	supplemental_page_table_init (&thread_current ()->spt);
 #endif
@@ -250,7 +252,7 @@ __do_fork (void *aux) {
 		do_iret (&if_);
 error:
 	// thread_exit ();
-	//자식을 다 만들었으니 업하여 활성화 
+	
 	sema_up(&current -> sema_fork);
 	exit_syscall(-1);
 }
@@ -495,7 +497,6 @@ load (const char *file_name, struct intr_frame *if_) {
 		argv[argc] = token;
 		token = strtok_r ('\0', " ", &save_ptr);
 		
-		// printf("잘 들어갔니?: %s ----- %p\n", argv[argc], &argv[argc]);
 		argc ++;
 	}
 
@@ -794,6 +795,9 @@ lazy_load_segment (struct page *page, void *aux) {
 	/* TODO: Load the segment from the file */
 	/* TODO: This called when the first page fault occurs on address VA. */
 	/* TODO: VA is available when calling this function. */
+	/* TODO: 파일에서 세그먼트 로드 */
+	/* TODO: 주소 VA에서 첫 번째 페이지 오류가 발생했을 때 호출됩니다. */
+	/* TODO: 이 함수를 호출할 때 VA를 사용할 수 있습니다. */
 }
 
 /* Loads a segment starting at offset OFS in FILE at address
@@ -825,11 +829,11 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
 		size_t page_zero_bytes = PGSIZE - page_read_bytes;
 
 		/* TODO: Set up aux to pass information to the lazy_load_segment. */
+		/* TODO: lazy_load_segment에 정보를 전달하도록 aux를 설정합니다. */
 		void *aux = NULL;
 		if (!vm_alloc_page_with_initializer (VM_ANON, upage,
 					writable, lazy_load_segment, aux))
 			return false;
-
 		/* Advance. */
 		read_bytes -= page_read_bytes;
 		zero_bytes -= page_zero_bytes;

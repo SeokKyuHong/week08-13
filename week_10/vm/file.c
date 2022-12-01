@@ -10,14 +10,15 @@ static void file_backed_destroy (struct page *page);
 static const struct page_operations file_ops = {
 	.swap_in = file_backed_swap_in,
 	.swap_out = file_backed_swap_out,
-	.destroy = file_backed_destroy,
+	.destroy = file_backed_destroy,		//페이지를 삭제하는 함수
 	.type = VM_FILE,
 };
 
 /* The initializer of file vm */
+/* 파일 vm의 초기화 */
 void
 vm_file_init (void) {
-}
+} 
 
 /* Initialize the file backed page */
 bool
