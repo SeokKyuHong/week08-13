@@ -54,11 +54,14 @@ struct hash_elem {
 
 /* Computes and returns the hash value for hash element E, given
  * auxiliary data AUX. */
+/* 주어진 보조 데이터 AUX에서 해시 요소 E의 해시 값을 계산하고 반환합니다. */
 typedef uint64_t hash_hash_func (const struct hash_elem *e, void *aux);
 
 /* Compares the value of two hash elements A and B, given
  * auxiliary data AUX.  Returns true if A is less than B, or
  * false if A is greater than or equal to B. */
+/* 보조 데이터 AUX가 주어지면 두 해시 요소 A와 B의 값을 비교합니다.
+A가 B보다 작으면 참을 반환하고, A가 B보다 크거나 같으면 거짓을 반환합니다. */
 typedef bool hash_less_func (const struct hash_elem *a,
 		const struct hash_elem *b,
 		void *aux);
@@ -109,5 +112,7 @@ bool hash_empty (struct hash *);
 uint64_t hash_bytes (const void *, size_t);
 uint64_t hash_string (const char *);
 uint64_t hash_int (int);
+
+
 
 #endif /* lib/kernel/hash.h */

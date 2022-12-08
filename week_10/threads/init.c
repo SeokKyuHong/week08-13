@@ -92,12 +92,12 @@ main (void) {
 	//mem_end : 268304384
 	malloc_init ();				// 사용자 메모리 할당(malloc)이 가능하게 설정
 	paging_init (mem_end);		// loader.S 에서 구성했던 페이지 테이블을 다시 구성
-
+	
 #ifdef USERPROG
 	tss_init ();
 	gdt_init ();
 #endif
-
+	
 	/* Initialize interrupt handlers. */
 	intr_init ();
 	timer_init ();
@@ -121,7 +121,7 @@ main (void) {
 #ifdef VM
 	vm_init ();
 #endif
-
+	
 	printf ("Boot complete.\n");
 
 	/* 커널 명령줄에 지정된 작업을 실행합니다. */
@@ -149,20 +149,23 @@ bss_init (void) {
 /* Populates the page table with the kernel virtual mapping,
  * and then sets up the CPU to use the new page directory.
  * Points base_pml4 to the pml4 it creates. */
+/* 커널 가상 매핑으로 페이지 테이블을 채웁니다.
+  * 그런 다음 새 페이지 디렉토리를 사용하도록 CPU를 설정합니다.
+  * base_pml4가 생성하는 pml4를 가리킵니다. */
 static void
 paging_init (uint64_t mem_end) {
 	uint64_t *pml4, *pte;
 	int perm;
 	pml4 = base_pml4 = palloc_get_page (PAL_ASSERT | PAL_ZERO);
 
-	extern char start, _end_kernel_text;
+	extern char _start, _end_kernel_text;
 	// Maps physical address [0 ~ mem_end] to
 	//   [LOADER_KERN_BASE ~ LOADER_KERN_BASE + mem_end].
 	for (uint64_t pa = 0; pa < mem_end; pa += PGSIZE) {
 		uint64_t va = (uint64_t) ptov(pa);
 
 		perm = PTE_P | PTE_W;
-		if ((uint64_t) &start <= va && va < (uint64_t) &_end_kernel_text)
+		if ((uint64_t) &_start <= va && va < (uint64_t) &_end_kernel_text)
 			perm &= ~PTE_W;
 
 		if ((pte = pml4e_walk (pml4, va, 1)) != NULL)
