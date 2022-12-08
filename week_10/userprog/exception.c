@@ -140,21 +140,18 @@ page_fault (struct intr_frame *f) {
 	not_present = (f->error_code & PF_P) == 0;
 	write = (f->error_code & PF_W) != 0;
 	user = (f->error_code & PF_U) != 0;
-
 	/*프로젝트 2*/
-	if (user){
-		f->R.rdi = -1;
-		exit_syscall(f->R.rdi);
-	}
-
-
+	// if (user){
+	// 	f->R.rdi = -1;
+	// 	// exit_syscall(f->R.rdi);
+	// }
 
 #ifdef VM
 	/* For project 3 and later. */
 	if (vm_try_handle_fault (f, fault_addr, user, write, not_present))
 		return;
 #endif
-
+	exit_syscall(f->R.rdi);
 	/* Count page faults. */
 	page_fault_cnt++;
 

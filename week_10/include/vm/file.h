@@ -7,6 +7,15 @@ struct page;
 enum vm_type;
 
 struct file_page {
+	struct file *file;
+	size_t length;
+	off_t offset
+};
+
+struct lazy_load_info{
+	struct file *file;
+	size_t page_read_bytes;
+	off_t offset
 };
 
 void vm_file_init (void);

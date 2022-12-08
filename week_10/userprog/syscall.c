@@ -13,8 +13,9 @@
 #include "kernel/stdio.h"
 #include "filesys/file.h"
 #include "user/syscall.h"
+#include "vm/vm.h"
 
-
+void syscall_handler (struct intr_frame *f UNUSED);
 void syscall_entry (void);
 void syscall_syscall (struct intr_frame *);
 void exit_syscall (int status) NO_RETURN;
@@ -29,13 +30,14 @@ void seek_syscall (int fd, unsigned position);
 unsigned tell_syscall (int fd);
 void close_syscall (int fd);
 int add_file_to_fd_table (struct file *file);
-void check_address (const uint64_t *addr);
+struct page* check_address (const uint64_t *addr);
 struct file *fd_to_struct_filep (int fd);
 void remove_file_from_fd_table(int fd);
 int fork_syscall(const char *thread_name, struct intr_frame *f);
 int wait_syscall (pid_t pid); 
-
-
+void check_valid_buffer(void* buffer, unsigned size, void* rsp, bool to_write);
+void *mmap_syscall (void *addr, size_t length, int writable, int fd, off_t offset);
+void munmap_syscall(void *addr);
 
 /* System call.
  *
@@ -55,15 +57,20 @@ int wait_syscall (pid_t pid);
 /*-------------추가 함수--------------*/
 
 // 유저영역의 주소인지 확인 
-void
-check_address (const uint64_t *addr)
+struct page*
+check_address (const uint64_t *addr) 
 {
 	struct thread *cur = thread_current();
 	//유저영역의 주소가 아니거나, 물리주소와 맵핑되어 있는 페이지가 없다면 프로세스를 종료 시킨다.
-	if (!(is_user_vaddr(addr)) || pml4_get_page(cur -> pml4, addr) == NULL)
+	if (is_kernel_vaddr(addr) || addr == NULL)
 	{
 		exit_syscall(-1);
 	}
+	if (!spt_find_page(&cur->spt, addr)){
+		exit_syscall(-1);
+	}
+	
+	return spt_find_page(&cur->spt, addr);
 }
 
 int 
@@ -99,8 +106,26 @@ remove_file_from_fd_table(int fd){
 	t -> file_descriptor_table[fd] = NULL;
 }
 
+//project3
+void 
+check_valid_buffer(void* buffer, unsigned size, void* rsp, bool to_write){
+	/* 버퍼 내의 시작부터 끝까지의 각 주소를 모두 check_address*/
+	for (int i = 0; i <= size; i++){
+		struct page* page = check_address(buffer + i); 
+		// printf("************%p\n", buffer+i);
+		/* 해당 주소가 포함된 페이지가 spt에 없다면 */
+		if(page == NULL)
+			exit_syscall(-1);
 
-/*-------------추가 함수 끝--------------*/
+		/* write 시스템 콜을 호출했는데 이 페이지가 쓰기가 허용된 페이지가 아닌 경우 */
+		if(to_write == true && page->writable == false)
+			exit_syscall(-1);
+	}
+
+}
+
+
+/*-------------추가 함수 끝--------------*/ 
 
 void
 syscall_init (void) {
@@ -115,14 +140,19 @@ syscall_init (void) {
 			FLAG_IF | FLAG_TF | FLAG_DF | FLAG_IOPL | FLAG_AC | FLAG_NT);
 
 	lock_init(&filesys_lock);
-
+	
 }
 
 /* The main system call interface */
 void
 syscall_handler (struct intr_frame *f UNUSED) {
 	// TODO: Your implementation goes here.
+	#ifdef VM
+		
+		thread_current()->rsp_stack = f->rsp; // syscall을 호출한 유저 프로그램의 유저 스택 포인터
+	#endif
 	uint64_t syscall_no = f->R.rax;  // 콜 넘버
+
 
 	// uint64_t a1 = f->R.rdi;		// 파일 네임
 	// uint64_t a2 = f->R.rsi;		// v(데이터)
@@ -140,65 +170,77 @@ syscall_handler (struct intr_frame *f UNUSED) {
 		// 핀토드 종료 시스템 콜
 		case SYS_HALT : 
 			power_off();
-		break;
+			break;
 
 		//프로세스 종료 시스템 콜
 		case SYS_EXIT : 
 			exit_syscall (f->R.rdi);
-		break;
+			break;
 			
 		case SYS_FORK :
 			f->R.rax = fork_syscall(f->R.rdi, f);
-		break;
+			break;
 
 		//프로세스 생성
 		case SYS_EXEC :
 			f->R.rax = exec_syscall(f->R.rdi);
-		break;
+			break;
 
 		case SYS_WAIT :
 			f->R.rax = wait_syscall(f->R.rdi);
-		break;
+			break;
 
 		// 파일 이름과 파일 사이즈를 인자 값으로 받아 파일을 생성하는 함수.
 		case SYS_CREATE : 
 			f->R.rax = create_syscall(f->R.rdi, f->R.rsi);
-		break;
+			break;
 
 		case SYS_REMOVE :
 			f->R.rax = remove_syscall(f->R.rdi);
-		break;
+			break;
 
 		case SYS_OPEN :
 			f->R.rax = open_syscall(f->R.rdi);
-		break;
+			break;
 
 		case SYS_FILESIZE :
 			
 			f->R.rax = filesize_syscall(f->R.rdi); 
-		break;
+			break;
 
 		case SYS_READ :
+			check_valid_buffer(f->R.rsi, f->R.rdx, f->rsp, 1);
 			f->R.rax = read_syscall (f->R.rdi, f->R.rsi, f->R.rdx);
-		break;
+			break;
 
 		case SYS_WRITE :
-			
+			check_valid_buffer(f->R.rsi, f->R.rdx, f->rsp, 0);
 			f->R.rax = write_syscall(f->R.rdi, f->R.rsi, f->R.rdx);	
-		break;
+			break;
 
 		case SYS_SEEK :
-			// hong_dump_frame (f);
 			seek_syscall (f->R.rdi, f->R.rsi);
-		break;
+			break;
 
 		case SYS_TELL :
 			f->R.rax = tell_syscall (f->R.rdi);
-		break;
+			break;
 
 		case SYS_CLOSE :
 			close_syscall(f->R.rdi);
-		break;
+			break;
+
+		case SYS_MMAP :
+			f->R.rax = mmap_syscall(f->R.rdi, f->R.rsi, f->R.rdx, f->R.r10, f->R.r8);
+			break;
+
+		case SYS_MUNMAP :
+			munmap_syscall(f->R.rdi);
+			break;
+
+		default:
+			exit_syscall(-1);
+			break;
 
 	}
 	
@@ -211,12 +253,14 @@ void
 exit_syscall (int status) {
 	struct thread *t = thread_current();
 	t->exit_status = status;	//해당 종료 상태값을 스레드에 저장
+	
 	printf("%s: exit(%d)\n", t->name, status); 
 	thread_exit ();
 }
 
 int 
 fork_syscall(const char *thread_name, struct intr_frame *f){
+	
 	return process_fork(thread_name, f);
 }
 
@@ -242,8 +286,9 @@ remove_syscall (const char *file) {
 // 현재 프로세스를 cmd_line에서 지정된 인수를 전달하여 이름이 지정된 실행 파일로 변경
 int
 exec_syscall (char *file) {
+	
 	check_address(file);
-
+	
 	int file_size = strlen(file)+1;
 	char *fn_copy = palloc_get_page(PAL_ZERO); // 파일 네임 카피
 	if (fn_copy == NULL) {
@@ -252,7 +297,8 @@ exec_syscall (char *file) {
 	strlcpy (fn_copy, file, file_size);
 
 	if (process_exec (fn_copy) == -1){
-		return -1;
+		// return -1;
+		exit_syscall(-1);
 	}
 }
 
@@ -271,6 +317,7 @@ write_syscall (int fd, const void *buffer, unsigned size){
 		return size;
 	}
 	else{
+
 		struct file *write_file = fd_to_struct_filep(fd);
 		if (write_file == NULL){
 			
@@ -286,8 +333,12 @@ write_syscall (int fd, const void *buffer, unsigned size){
 
 int
 open_syscall (const char *file) {
+	
 	check_address(file);
-	lock_acquire(&filesys_lock);         
+	if (file == NULL) {
+		return -1;
+	}
+	lock_acquire(&filesys_lock);     
 	struct file *open_file = filesys_open(file); //오픈 파일 객체정보를 저장
 	/*rox*/
 	if (strcmp(thread_current()->name, file) == 0){
@@ -323,9 +374,10 @@ filesize_syscall (int fd) {
 //읽얼꺼야
 int
 read_syscall (int fd, void *buffer, unsigned size) {
+	
 	check_address(buffer);
-	// check_address(buffer + size -1);
-
+	check_address(buffer + size -1);
+	
 	int read_count;
 	struct file *fileobj = fd_to_struct_filep(fd);
 
@@ -383,6 +435,45 @@ close_syscall (int fd) {
 
 int
 wait_syscall (pid_t pid) {
+
 	return process_wait(pid);
 }
 
+void *
+mmap_syscall (void *addr, size_t length, int writable, int fd, off_t offset) {
+	// if (offset % PGSIZE != 0) 
+	// 	return NULL;
+	struct file *file = process_get_file(fd);
+
+	if (file == NULL)
+		return NULL;
+	
+	/* 파일의 시작점도 페이지 정렬 */
+	if (offset % PGSIZE != 0) {
+        return NULL;
+    }
+
+	/*  It must fail if addr is not page-aligned */
+	if (pg_round_down(addr) != addr || is_kernel_vaddr(addr))
+		return NULL;
+
+	/*  if the range of pages mapped overlaps any existing set of mapped pages */
+	if (spt_find_page(&thread_current()->spt, addr))
+		return NULL;
+
+	/* addr가 NULL(0), 파일의 길이가 0*/
+	if (addr == NULL || (long long)length == 0)
+		return NULL;
+	
+	/* file descriptors representing console input and output are not mappable */
+	if (fd == 0 || fd == 1)
+		exit_syscall(-1);
+	
+	return do_mmap(addr, length, writable, file, offset);
+}
+
+void 
+munmap_syscall(void *addr){
+	
+	do_munmap(addr);
+}

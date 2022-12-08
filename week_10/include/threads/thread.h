@@ -8,6 +8,8 @@
 #include "threads/synch.h"
 #ifdef VM
 #include "vm/vm.h"
+#include "kernel/hash.h"
+#include "userprog/process.h"
 #endif
 
 
@@ -17,7 +19,7 @@ enum thread_status {
 	THREAD_RUNNING,     /* Running thread. */
 	THREAD_READY,       /* Not running but ready to run. */
 	THREAD_BLOCKED,     /* Waiting for an event to trigger. */
-	THREAD_DYING        /* About to be destroyed. */
+	THREAD_DYING        /* About sto be destroyed. */
 };
 
 /* Thread identifier type.
@@ -88,6 +90,7 @@ typedef int tid_t;
 	실행 대기열(thread.c)의 요소이거나 세마포 대기 목록(synch.c)의 요소일 수 있습니다.
 	이 두 가지 방법은 상호 배타적이기 때문에 사용할 수 있습니다. 
 	준비 상태의 스레드만 실행 큐에 있고 차단 상태의 스레드만 세마포 대기 목록에 있습니다. */
+
 struct thread {
 	/* Owned by thread.c. */
 	tid_t tid;                          /* Thread identifier.(고유값) */
@@ -122,6 +125,9 @@ struct thread {
 	bool is_waited;						//waited 불렸는지 아닌지(기다리라고 했다면 true)
 	struct semaphore sema_wait;			//자식이 끝날때 까지 대기하기 위한 sema
 	struct semaphore sema_free;			//process_exit를 하기 전에 자식의 exit_status를 체크하기 위한 sema
+	
+	/*project 3*/
+	// struct hash_elem hash_elem;
 
 
 #ifdef USERPROG
@@ -132,8 +138,9 @@ struct thread {
 	/* Table for whole virtual memory owned by thread. */
 	/* 스레드가 소유한 전체 가상 메모리에 대한 테이블. */
 	struct supplemental_page_table spt;
+	void *stack_bottom;
+	void *rsp_stack;
 #endif
-
 	/* Owned by thread.c. */
 	struct intr_frame tf;               /* Information for switching */
 	unsigned magic;                     /* Detects stack overflow. */

@@ -44,6 +44,7 @@ is_head (struct list_elem *elem) {
    false otherwise. */
 static inline bool
 is_interior (struct list_elem *elem) {
+	
 	return elem != NULL && elem->prev != NULL && elem->next != NULL;
 }
 
@@ -244,7 +245,9 @@ struct list_elem *e = list_pop_front (&list);
 
 struct list_elem *
 list_remove (struct list_elem *elem) {
+	
 	ASSERT (is_interior (elem));
+	
 	elem->prev->next = elem->next;
 	elem->next->prev = elem->prev;
 	return elem->next;

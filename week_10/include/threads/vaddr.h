@@ -29,6 +29,7 @@
 #define pg_round_up(va) ((void *) (((uint64_t) (va) + PGSIZE - 1) & ~PGMASK))
 
 /* Round down to nearest page boundary. */
+/* 가장 가까운 페이지 경계로 내림합니다. */
 #define pg_round_down(va) (void *) ((uint64_t) (va) & ~PGMASK)
 
 /* Kernel virtual address start */
@@ -38,6 +39,7 @@
 #define USER_STACK 0x47480000
 
 /* Returns true if VADDR is a user virtual address. */
+/* VADDR이 사용자 가상 주소인 경우 참을 반환합니다. */
 #define is_user_vaddr(vaddr) (!is_kernel_vaddr((vaddr)))
 
 /* Returns true if VADDR is a kernel virtual address. */

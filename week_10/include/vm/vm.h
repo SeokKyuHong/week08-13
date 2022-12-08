@@ -2,6 +2,11 @@
 #define VM_VM_H
 #include <stdbool.h>
 #include "threads/palloc.h"
+#include "kernel/hash.h"
+#include "userprog/syscall.h"
+// #include "userprog/process.h"
+// #include "threads/thread.h"
+#include "userprog/syscall.h"
 
 enum vm_type {
 	VM_UNINIT = 0,	/* page not initialized */
@@ -35,24 +40,32 @@ enum vm_type {
 
 struct page_operations;
 struct thread;
+struct list frame_table;
+struct list_elem *start;
+
 
 #define VM_TYPE(type) ((type) & 7)
+#define vm_alloc_page(type, upage, writable) \
+	vm_alloc_page_with_initializer ((type), (upage), (writable), NULL, NULL)
 
 /* The representation of "page".
  * This is kind of "parent class", which has four "child class"es, which are
  * uninit_page, file_page, anon_page, and page cache (project4).
  * DO NOT REMOVE/MODIFY PREDEFINED MEMBER OF THIS STRUCTURE. */
 struct page {
-	const struct page_operations *operations;
+	const struct page_operations *operations;//페이지 관련 연산종류
 	void *va;              /* Address in terms of user space */
-	struct frame *frame;   /* Back reference for frame */
+	struct frame *frame;   //물리 메모리 프레임 주소
 
 	/* Your implementation */
+	struct hash_elem hash_elem;
+	bool writable;
+	size_t page_cnt; 
+	enum vm_type vm_type;
 
 	/* Per-type data are binded into the union.
 	 * Each function automatically detects the current union */
-	/* 유형별 데이터는 공용체에 바인딩됩니다.
-	 * 각 함수는 현재 합집합을 자동으로 감지 */
+	//해당 페이지의 유형
 	union {
 		struct uninit_page uninit;
 		struct anon_page anon;
@@ -65,17 +78,20 @@ struct page {
 
 /* The representation of "frame" */
 struct frame {
-	void *kva;
-	struct page *page;
+	void *kva;	//커널 가상 주소를 가르키는 포인터
+	struct page *page;	//프레임과 맵핑되는 프로세스 유저의 가상주소 페이지
+	struct list_elem frame_elem; //추가
 };
 
 /* The function table for page operations.
  * This is one way of implementing "interface" in C.
  * Put the table of "method" into the struct's member, and
  * call it whenever you needed. */
-/* 페이지 작업을 위한 함수 테이블.
-  * 이것은 C에서 "인터페이스"를 구현하는 한 가지 방법입니다.
-  * "method" 테이블을 구조체의 멤버에 넣고 필요할 때마다 호출하십시오. */
+
+//페이지의 연산 종류 
+//해당 페이지가 어떤 타입을 가지고 있느냐에 따라 해당 연산을 실제로
+//수행하는 함수들이 달라진다. 
+//함수 포인터를 활용하여 각 페이지 유형에 맞는 연산 수행
 struct page_operations {
 	bool (*swap_in) (struct page *, void *);
 	bool (*swap_out) (struct page *);
@@ -94,28 +110,11 @@ struct page_operations {
  * 현재 프로세스의 메모리 공간 표현.*/
 struct supplemental_page_table {
 	//뭐가 필요할까
-
+	struct hash hashs;
 	//** 프로세스마다 pt을 갖어야 한다. 
 	//1. va를 가르키는 포인터
-	struct page page_offset;
-	//2. pa를 가르키는 포인터 
-	struct frame frame_offset;
-	// 스왑
-	struct page_operations swap;
-	//3. r/w 데이터를 저장 해야 할까?(value)
-	//4. hash / Hash_elem
-	//5. 페이지 폴트 관련 
-	
-	//1. 추가 페이지 테이블: 데이터 위치(프레임/디스크/스왑), 
-	//해당 커널 가상 주소에 대한 포인터, 
-	//활성 대 비활성 등 각 페이지에 대한 추가 데이터를 추적하는 프로세스별 데이터 구조입니다.
-
-	//2. 프레임 테이블: 할당/사용 가능한 물리적 프레임을 추적하는 전역 데이터 구조.
-
-	//3. 스왑 테이블: 스왑 슬롯을 추적합니다.
-
-	//4. 파일 매핑 테이블: 어떤 메모리 매핑된 파일이 어떤 페이지에 매핑되는지 추적합니다.	
-
+	struct page *page_table;
+	struct frame *frame_table;
 
 };
 
@@ -140,5 +139,11 @@ bool vm_alloc_page_with_initializer (enum vm_type type, void *upage,
 void vm_dealloc_page (struct page *page);
 bool vm_claim_page (void *va);
 enum vm_type page_get_type (struct page *page);
+static struct frame *vm_evict_frame(void);
+bool delete_page (struct hash *pages, struct page *p);
+unsigned page_hash (const struct hash_elem *e, void *aux);
+bool page_less (const struct hash_elem *a, 
+	const struct hash_elem *b, void *aux);
+static void vm_stack_growth (void *addr UNUSED);
 
 #endif  /* VM_VM_H */
