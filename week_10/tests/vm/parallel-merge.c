@@ -2,6 +2,9 @@
    16 chunks.  A separate subprocess sorts each chunk; the
    subprocesses run in parallel.  Then we merge the chunks and
    verify that the result is what it should be. */
+/* 약 1MB의 임의 데이터를 생성한 다음 16개의 청크로 나눕니다.
+별도의 하위 프로세스가 각 청크를 정렬합니다. 하위 프로세스는 병렬로 실행됩니다.
+그런 다음 청크를 병합하고 결과가 올바른지 확인합니다. */
 
 #include "tests/vm/parallel-merge.h"
 #include <stdio.h>

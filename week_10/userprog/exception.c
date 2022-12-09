@@ -151,7 +151,10 @@ page_fault (struct intr_frame *f) {
 	if (vm_try_handle_fault (f, fault_addr, user, write, not_present))
 		return;
 #endif
-	exit_syscall(f->R.rdi);
+	if (user){
+		f->R.rdi = -1;
+		exit_syscall(f->R.rdi);
+	}
 	/* Count page faults. */
 	page_fault_cnt++;
 

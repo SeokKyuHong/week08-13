@@ -118,7 +118,6 @@ check_valid_buffer(void* buffer, unsigned size, void* rsp, bool to_write){
 		/* write 시스템 콜을 호출했는데 이 페이지가 쓰기가 허용된 페이지가 아닌 경우 */
 		if(to_write == true && page->writable == false)
 			exit_syscall(-1);
-
 		#ifdef VM
 		if (thread_current()->pml4 == &page->frame)
 			exit_syscall(-1);
@@ -272,18 +271,18 @@ fork_syscall(const char *thread_name, struct intr_frame *f){
 bool
 create_syscall (char *file, unsigned initial_size) {
 	check_address(file);
-	lock_acquire(&filesys_lock);	//file 관련 함수를 호출 시 동시성 보장을 위해 락을 요청 
+	// lock_acquire(&filesys_lock);	//file 관련 함수를 호출 시 동시성 보장을 위해 락을 요청 
 	bool return_value = filesys_create(file, initial_size);
-	lock_release(&filesys_lock);
+	// lock_release(&filesys_lock);
 	return return_value;
 }
 
 bool
 remove_syscall (const char *file) {
 	check_address(file);
-	lock_acquire(&filesys_lock);
+	// lock_acquire(&filesys_lock);
 	bool return_value = filesys_remove(file);
-	lock_release(&filesys_lock);
+	// lock_release(&filesys_lock);
 	return return_value;
 }
 
@@ -369,9 +368,9 @@ filesize_syscall (int fd) {
 	if (fileobj == NULL){
 		return -1;
 	}
-	lock_acquire(&filesys_lock);
+	// lock_acquire(&filesys_lock);
 	off_t write_byte = file_length(fileobj);
-	lock_release(&filesys_lock);
+	// lock_release(&filesys_lock); 
 	return write_byte;
 }
 
@@ -434,9 +433,9 @@ close_syscall (int fd) {
 		return ;
 	}
 
-	lock_acquire(&filesys_lock);
+	// lock_acquire(&filesys_lock);
 	file_close(close_file);
-	lock_release(&filesys_lock);
+	// lock_release(&filesys_lock);
 	remove_file_from_fd_table(fd);
 }
 
