@@ -122,7 +122,6 @@ struct page *
 spt_find_page (struct supplemental_page_table *spt UNUSED, void *va UNUSED) {
 	struct page *page = (struct page *)malloc (sizeof(struct page));
   	struct hash_elem *e;
-
   	page->va = pg_round_down(va);
 
   	e = hash_find(&spt->hashs, &page->hash_elem);
