@@ -60,13 +60,11 @@ void munmap_syscall(void *addr);
 struct page*
 check_address (const uint64_t *addr) 
 {
+	
 	struct thread *cur = thread_current();
 	//유저영역의 주소가 아니거나, 물리주소와 맵핑되어 있는 페이지가 없다면 프로세스를 종료 시킨다.
-	if (is_kernel_vaddr(addr) || addr == NULL)
+	if (is_kernel_vaddr(addr) || addr == NULL || !spt_find_page(&cur->spt, addr) || !(&cur->pml4))
 	{
-		exit_syscall(-1);
-	}
-	if (!spt_find_page(&cur->spt, addr)){
 		exit_syscall(-1);
 	}
 	
@@ -120,6 +118,12 @@ check_valid_buffer(void* buffer, unsigned size, void* rsp, bool to_write){
 		/* write 시스템 콜을 호출했는데 이 페이지가 쓰기가 허용된 페이지가 아닌 경우 */
 		if(to_write == true && page->writable == false)
 			exit_syscall(-1);
+
+		#ifdef VM
+		if (thread_current()->pml4 == &page->frame)
+			exit_syscall(-1);
+		#endif
+
 	}
 
 }
@@ -306,7 +310,7 @@ exec_syscall (char *file) {
 int 
 write_syscall (int fd, const void *buffer, unsigned size){
 	
-	check_address(buffer);
+	// check_address(buffer);
 	if (fd == STDIN_FILENO){
 		return 0;
 	}
@@ -375,19 +379,22 @@ filesize_syscall (int fd) {
 int
 read_syscall (int fd, void *buffer, unsigned size) {
 	
-	check_address(buffer);
-	check_address(buffer + size -1);
+	// check_address(buffer);
+	// check_address(buffer + size -1);
 	
 	int read_count;
 	struct file *fileobj = fd_to_struct_filep(fd);
 
 	if (fileobj == NULL){
+		
 		return -1;
 	}
 
 	if (fd == STDOUT_FILENO){
+		
 		return -1;
 	}
+	
 	lock_acquire(&filesys_lock);
 	read_count = file_read(fileobj, buffer, size);
 	lock_release(&filesys_lock);
