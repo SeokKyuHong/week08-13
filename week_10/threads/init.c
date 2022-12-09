@@ -132,7 +132,7 @@ main (void) {
 		power_off ();
 	thread_exit ();
 }
-
+ 
 /* Clear BSS */
 static void
 bss_init (void) {

@@ -43,6 +43,7 @@ uninit_new (struct page *page, void *va, vm_initializer *init,
 }
 
 /* Initalize the page on first fault */
+/* 첫 번째 fault 시 페이지 Initalize */
 static bool
 uninit_initialize (struct page *page, void *kva) {
 	struct uninit_page *uninit = &page->uninit;
@@ -52,6 +53,9 @@ uninit_initialize (struct page *page, void *kva) {
 	void *aux = uninit->aux;
 
 	/* TODO: You may need to fix this function. */
+	//페이지 타입에 맞도록 페이지를 초기화
+	//만약 페이지의 segment가 load되지 않은 상태면 lazy load해줌
+	// -> init이 lazy_load_segment 일때 
 	return uninit->page_initializer (page, uninit->type, kva) &&
 		(init ? init (page, aux) : true);
 }
@@ -67,4 +71,7 @@ uninit_destroy (struct page *page) {
 	 * TODO: If you don't have anything to do, just return. */
 	struct lazy_load_info * info = (struct lazy_load_info *)(uninit->aux);
 	file_close(&info->file);
+
+	// //치우 왈 
+	// free(uninit->aux);
 }

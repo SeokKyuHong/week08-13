@@ -5,6 +5,7 @@
         "pte.h": "c",
         "thread.h": "c",
         "process.h": "c",
-        "vm.h": "c"
+        "vm.h": "c",
+        "main.h": "c"
     }
 }

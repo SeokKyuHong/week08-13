@@ -300,6 +300,7 @@ process_exec (void *f_name) { 				//실행함수
 	/* And then load the binary */
 	success = load (file_name, &_if);
 	
+	
 	if (!success){
 		return -1;
 		// exit_syscall(-1);
@@ -308,7 +309,7 @@ process_exec (void *f_name) { 				//실행함수
 	/* If load failed, quit. */
 	palloc_free_page (file_name);
 	/* Start switched process. */
-
+	
 	do_iret (&_if);
 	NOT_REACHED ();
 }
@@ -352,7 +353,7 @@ process_wait (tid_t child_tid UNUSED) {
 	list_remove(&child->child_list_elem);		//자식 제거
 	sema_up(&child -> sema_free);				//free할 수 있도록 인터럽트 해제
 	
-	
+	 
 	// while (1){}
 	// thread_set_priority(thread_get_priority()-1);
 	
@@ -371,6 +372,7 @@ process_exit (void) {
 	/* TODO: 프로세스 종료 메시지 구현(project2/process_termination.html 참조).
 	 * TODO: 여기에서 프로세스 리소스 정리를 구현하는 것이 좋습니다. */
 	for (int i = 2; i < MAX_FD_NUM; i ++){
+		
 		close_syscall(i);
 	}
 
@@ -378,7 +380,6 @@ process_exit (void) {
 	process_cleanup ();
 	
 	sema_up(&curr->sema_wait);
-	// sema_up(&curr->sema_fork);
 	sema_down(&curr->sema_free);
 
 }
@@ -388,6 +389,7 @@ process_exit (void) {
 static void
 process_cleanup (void) {
 	struct thread *curr = thread_current ();
+	
 #ifdef VM
 	if(!hash_empty(&curr->spt.hashs))
 		supplemental_page_table_kill (&curr->spt);
@@ -526,7 +528,6 @@ load (const char *file_name, struct intr_frame *if_) {
 	}
 
 	/*--------------P2-------------------*/
-
 	/* Open executable file. */
 	file = filesys_open (file_name);
 	
@@ -661,6 +662,7 @@ load (const char *file_name, struct intr_frame *if_) {
 /*--------------------------------------------------*/
 	
 	success = true;
+	return success;
 	
 done:
 	/* We arrive here whether the load is successful or not. */

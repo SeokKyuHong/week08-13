@@ -66,11 +66,10 @@ bool
 vm_alloc_page_with_initializer (enum vm_type type, void *upage, bool writable,
 		vm_initializer *init, void *aux) {
 
-			
 	ASSERT (VM_TYPE(type) != VM_UNINIT)
 	struct supplemental_page_table *spt = &thread_current ()->spt;
 	/* Check wheter the upage is already occupied or not. */
-	/* 페이지가 이미 점유되어 있는지 확인합니다. */
+	/* 페이지가 이미 점유되어 있는지 확인 */
 	if (spt_find_page (spt, upage) == NULL) {
 		/* TODO: Create the page, fetch the initialier according to the VM type,
 		 * TODO: and then create "uninit" page struct by calling uninit_new. You
@@ -85,13 +84,10 @@ vm_alloc_page_with_initializer (enum vm_type type, void *upage, bool writable,
 		switch (VM_TYPE(type)){
 
 			case VM_ANON:
-				
 				initializer = anon_initializer;
-				
 				break;
 
 			case VM_FILE:
-				
 				initializer = file_backed_initializer;
 				break;
 			
@@ -100,12 +96,13 @@ vm_alloc_page_with_initializer (enum vm_type type, void *upage, bool writable,
 				break;
 		}
 
+		// 새 페이지를 만들어서 page의 구조체 맴버를 세팅
 		struct page *new_page = (struct page *)malloc (sizeof(struct page));
 		uninit_new(new_page, upage, init, type, aux, initializer);
 		
 		new_page->writable = writable;
 		new_page->vm_type = type;
-		new_page->page_cnt = -1;	 // file-mapped page가 아니므로 -1
+		new_page->page_cnt = -1;	// file-mapped page가 아니므로 -1
 		
 		/* TODO: 페이지를 spt에 삽입합니다. */ 
 		return spt_insert_page(spt, new_page);
@@ -122,11 +119,16 @@ struct page *
 spt_find_page (struct supplemental_page_table *spt UNUSED, void *va UNUSED) {
 	struct page *page = (struct page *)malloc (sizeof(struct page));
   	struct hash_elem *e;
+
+	/* 해당 va가 속해 있는 페이지 시작 주소를 가지는 page 만든다.*/
   	page->va = pg_round_down(va);
 
+	//인자로 들어온 spt에서 인자로 받은 va와 같은 page를 찾아 elem으로 반환 
   	e = hash_find(&spt->hashs, &page->hash_elem);
 	
 	free(page);
+
+	// e가 NULL이 아니면 page 구조체로 반환 
 	return e != NULL ? hash_entry (e, struct page, hash_elem) : NULL;
 }
 
@@ -401,21 +403,23 @@ supplemental_page_table_kill (struct supplemental_page_table *spt UNUSED) {
 	/* 스레드가 보유한 모든 supplemental_page_table을 삭제하고 
 	수정된 모든 내용을 스토리지에 다시 기록합니다. */
 	
-	struct hash_iterator i;
-	hash_first(&i, &spt->hashs);
-	while(hash_next(&i))
-	{
-		struct page *page = hash_entry(hash_cur(&i), struct page, hash_elem);
-		if(page->operations->type == VM_FILE)
-		{
+	// struct hash_iterator i;
+	// hash_first(&i, &spt->hashs);
+	// while(hash_next(&i))
+	// {
+	// 	struct page *page = hash_entry(hash_cur(&i), struct page, hash_elem);
+	// 	if(page->operations->type == VM_FILE)
+	// 	{
 			
-			do_munmap(page->va);
-			//destroy(page);
-		}
-		//free(page);
-	}
+	// 		do_munmap(page->va);
+	// 		//destroy(page);
+	// 	}
+	// 	//free(page);
+	// } 
 	
-	hash_destroy(&spt->hashs, spt_destructor);
+	// hash_destroy(&spt->hashs, spt_destructor);
+
+	hash_clear(&spt->hashs, spt_destructor);
 }
 
 //hash_elem이 포함된 페이지를 free
@@ -424,6 +428,7 @@ spt_destructor(struct hash_elem *e, void *aux)
 {
 	const struct page *p = hash_entry(e, struct page, hash_elem);
 	free(p);
+	// vm_dealloc_page(p);
 }
 
 static bool
