@@ -7,6 +7,7 @@
 // #include "userprog/process.h"
 // #include "threads/thread.h"
 #include "userprog/syscall.h"
+#include "threads/mmu.h"
 
 enum vm_type {
 	VM_UNINIT = 0,	/* page not initialized */
@@ -111,8 +112,6 @@ struct page_operations {
 struct supplemental_page_table {
 	//뭐가 필요할까
 	struct hash hashs;
-	//** 프로세스마다 pt을 갖어야 한다. 
-	//1. va를 가르키는 포인터
 	struct page *page_table;
 	struct frame *frame_table;
 

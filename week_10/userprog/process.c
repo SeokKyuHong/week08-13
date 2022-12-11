@@ -257,8 +257,8 @@ __do_fork (void *aux) {
 
 	current -> fdidx = parent -> fdidx;
 
+	// sema_up(&current -> sema_fork);
 	//자식을 다 만들었으니 업하여 활성화 
-	sema_up(&current -> sema_fork);
 	process_init ();
 	
 	/* Finally, switch to the newly created process. */
@@ -267,7 +267,7 @@ __do_fork (void *aux) {
 error:
 	// thread_exit ();
 	
-	sema_up(&current -> sema_fork);
+	// sema_up(&current -> sema_fork);
 	exit_syscall(-1);
 }
 
@@ -336,11 +336,9 @@ process_wait (tid_t child_tid UNUSED) {
 	struct thread *child = get_child(child_tid);	//넘어온 tid 값과 같은 자식 리스트의 스레드를 가져온다.
 	
 	if (child == NULL){							//없다면 리턴 -1
-		
 		return -1;
 	}
 	if (child->is_waited){						//아직 기다리라고 한 자식이면 리턴 -1
-		
 		return -1;
 	}
 	else {										//자식이 있고 기다리라고 했던 적이 없다면 
@@ -352,8 +350,8 @@ process_wait (tid_t child_tid UNUSED) {
 	int exit_status = child -> exit_status;
 	list_remove(&child->child_list_elem);		//자식 제거
 	sema_up(&child -> sema_free);				//free할 수 있도록 인터럽트 해제
-	
 	 
+	
 	// while (1){}
 	// thread_set_priority(thread_get_priority()-1);
 	
@@ -371,17 +369,18 @@ process_exit (void) {
 	 * TODO: We recommend you to implement process resource cleanup here. */
 	/* TODO: 프로세스 종료 메시지 구현(project2/process_termination.html 참조).
 	 * TODO: 여기에서 프로세스 리소스 정리를 구현하는 것이 좋습니다. */
-	for (int i = 2; i < MAX_FD_NUM; i ++){
+	// for (int i = 2; i < MAX_FD_NUM; i ++){
 		
-		close_syscall(i);
-	}
-
+	// 	close_syscall(i);
+	// 	return -1;
+	// }
+	
 	palloc_free_multiple(curr->file_descriptor_table, FDT_PAGES); //멀티풀로 교체 
 	process_cleanup ();
 	
-	sema_up(&curr->sema_wait);
-	sema_down(&curr->sema_free);
-
+	sema_up(&curr -> sema_wait);
+	sema_up(&curr -> sema_fork);
+	sema_down(&curr -> sema_free);
 }
 
 /* Free the current process's resources. */
@@ -662,7 +661,7 @@ load (const char *file_name, struct intr_frame *if_) {
 /*--------------------------------------------------*/
 	
 	success = true;
-	return success;
+
 	
 done:
 	/* We arrive here whether the load is successful or not. */
