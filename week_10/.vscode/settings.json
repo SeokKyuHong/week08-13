@@ -6,6 +6,7 @@
         "thread.h": "c",
         "process.h": "c",
         "vm.h": "c",
-        "main.h": "c"
+        "main.h": "c",
+        "mmu.h": "c"
     }
 }

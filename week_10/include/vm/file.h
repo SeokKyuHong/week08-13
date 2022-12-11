@@ -5,6 +5,7 @@
 
 struct page;
 enum vm_type;
+struct lock filesys_lock;
 
 struct file_page {
 	struct file *file;

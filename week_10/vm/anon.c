@@ -10,6 +10,8 @@ static struct disk *swap_disk;
 static bool anon_swap_in (struct page *page, void *kva);
 static bool anon_swap_out (struct page *page);
 static void anon_destroy (struct page *page);
+
+//추가
 struct bitmap *swap_table;
 const size_t SECTORS_PER_PAGE = PGSIZE / DISK_SECTOR_SIZE;  // sectors / page
 
@@ -25,8 +27,8 @@ static const struct page_operations anon_ops = {
 void
 vm_anon_init (void) {
 	/* TODO: Set up the swap_disk. */
-	swap_disk = disk_get(1, 1);  // 이해하지 않음
-    size_t swap_size = disk_size(swap_disk) / SECTORS_PER_PAGE;  // (size/page)*sector
+	swap_disk = disk_get(1, 1); 
+    size_t swap_size = disk_size(swap_disk) / SECTORS_PER_PAGE;  
     swap_table = bitmap_create(swap_size);
 }
 
@@ -35,7 +37,7 @@ bool
 anon_initializer (struct page *page, enum vm_type type, void *kva) {
 	/* Set up the handler */
 	/* page struct 안의 Union 영역은 현재 uninit page이다.
-	   ANON page를 초기화해주기 위해 해당 데이터를 모두 0으로 초기화해준다.*/
+	   ANON page를 초기화해주기 위해 해당 데이터를 모두 0으로 초기화*/
 	struct uninit_page * uninit = &page -> uninit;
 	memset (uninit, 0, sizeof(struct uninit_page));
 	
@@ -43,7 +45,7 @@ anon_initializer (struct page *page, enum vm_type type, void *kva) {
 	page->operations = &anon_ops;
 
 	struct anon_page *anon_page = &page->anon;
-	anon_page->swap_index = -1;
+	anon_page->swap_index = -1; // -1로 초기화 
 	
 	return true;
 }
@@ -52,8 +54,8 @@ anon_initializer (struct page *page, enum vm_type type, void *kva) {
 static bool
 anon_swap_in (struct page *page, void *kva) {
 	struct anon_page *anon_page = &page->anon;
-		/* swap out된 페이지가 디스크 스왑 영역 어디에 저장되었는지는
-	   anon_page 구조체 안에 저장되어 있다. */
+	/* swap out된 페이지가 디스크 스왑 영역 어디에 저장되었는지는
+	anon_page 구조체 안에 저장되어 있다. */
 	int page_no = anon_page->swap_index;
 
 	/* 스왑 테이블에서 해당 스왑 슬롯이 진짜 사용 중인지 체크  */
@@ -73,7 +75,8 @@ anon_swap_in (struct page *page, void *kva) {
 }
 
 /* Swap out the page by writing contents to the swap disk. */
-static bool anon_swap_out (struct page *page) {
+static bool 
+anon_swap_out (struct page *page) {
 	struct anon_page *anon_page = &page->anon;
 
 	/* 비트맵을 처음부터 순회해 false 값을 가진 비트를 하나 찾는다.

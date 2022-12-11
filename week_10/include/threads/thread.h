@@ -139,7 +139,7 @@ struct thread {
 	/* 스레드가 소유한 전체 가상 메모리에 대한 테이블. */
 	struct supplemental_page_table spt;
 	void *stack_bottom;
-	void *rsp_stack;
+	uintptr_t *rsp_stack;
 #endif
 	/* Owned by thread.c. */
 	struct intr_frame tf;               /* Information for switching */
