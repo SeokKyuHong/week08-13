@@ -62,6 +62,7 @@ filesys_done (void) {
   * NAME이라는 파일이 이미 존재하거나 내부 메모리 할당이 실패하면 실패합니다. */
 bool
 filesys_create (const char *name, off_t initial_size) {
+		
 	disk_sector_t inode_sector = 0;
 	struct dir *dir = dir_open_root ();
 	bool success = (dir != NULL

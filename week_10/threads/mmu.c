@@ -296,6 +296,9 @@ pml4_set_dirty (uint64_t *pml4, const void *vpage, bool dirty) {
  * accessed recently, that is, between the time the PTE was
  * installed and the last time it was cleared.  Returns false if
  * PML4 contains no PTE for VPAGE. */
+/* PML4의 가상 페이지 VPAGE에 대한 PTE가 최근에, 
+즉 PTE가 설치된 시간과 마지막으로 지워진 시간 사이에 액세스된 경우 true를 반환합니다.
+PML4에 VPAGE용 PTE가 포함되어 있지 않으면 false를 반환합니다. */
 bool
 pml4_is_accessed (uint64_t *pml4, const void *vpage) {
 	uint64_t *pte = pml4e_walk (pml4, (uint64_t) vpage, false);
@@ -304,6 +307,7 @@ pml4_is_accessed (uint64_t *pml4, const void *vpage) {
 
 /* Sets the accessed bit to ACCESSED in the PTE for virtual page
    VPAGE in PD. */
+/* PD의 가상 페이지 VPAGE에 대해 PTE에서 액세스된 비트를 ACCESSED로 설정합니다. */
 void
 pml4_set_accessed (uint64_t *pml4, const void *vpage, bool accessed) {
 	uint64_t *pte = pml4e_walk (pml4, (uint64_t) vpage, false);
