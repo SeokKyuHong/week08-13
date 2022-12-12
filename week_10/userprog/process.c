@@ -302,6 +302,7 @@ process_exec (void *f_name) { 				//실행함수
 	
 	
 	if (!success){
+		
 		return -1;
 		// exit_syscall(-1);
 	}
@@ -336,18 +337,18 @@ process_wait (tid_t child_tid UNUSED) {
 	struct thread *child = get_child(child_tid);	//넘어온 tid 값과 같은 자식 리스트의 스레드를 가져온다.
 	
 	if (child == NULL){							//없다면 리턴 -1
-		return -1;
-	}
-	if (child->is_waited){						//아직 기다리라고 한 자식이면 리턴 -1
-		return -1;
-	}
-	else {										//자식이 있고 기다리라고 했던 적이 없다면 
 		
-		child -> is_waited = true;				//자식을 기다리라고 한다. 
-	}	
+		return -1;
+	}
+	// if (child->is_waited){						//아직 기다리라고 한 자식이면 리턴 -1
+	// 	return -1;
+	// }
+	// else {										//자식이 있고 기다리라고 했던 적이 없다면 
+		
+	// 	child -> is_waited = true;				//자식을 기다리라고 한다. 
+	// }	
 	
 	sema_down(&child -> sema_wait);				//자식이 wait 상태인동안 인터럽트 활성화
-	int exit_status = child -> exit_status;
 	list_remove(&child->child_list_elem);		//자식 제거
 	sema_up(&child -> sema_free);				//free할 수 있도록 인터럽트 해제
 	 
@@ -355,7 +356,7 @@ process_wait (tid_t child_tid UNUSED) {
 	// while (1){}
 	// thread_set_priority(thread_get_priority()-1);
 	
-	return exit_status;			// 종료 상태를 리턴
+	return child -> exit_status;			// 종료 상태를 리턴
 	
 }
 
@@ -369,18 +370,20 @@ process_exit (void) {
 	 * TODO: We recommend you to implement process resource cleanup here. */
 	/* TODO: 프로세스 종료 메시지 구현(project2/process_termination.html 참조).
 	 * TODO: 여기에서 프로세스 리소스 정리를 구현하는 것이 좋습니다. */
-	// for (int i = 2; i < MAX_FD_NUM; i ++){
+	
 		
-	// 	close_syscall(i);
-	// 	return -1;
-	// }
-	
+	for (int i = 2; i < MAX_FD_NUM; i ++){
+		close_syscall(i);
+		// return -1;
+	}
+
 	palloc_free_multiple(curr->file_descriptor_table, FDT_PAGES); //멀티풀로 교체 
-	process_cleanup ();
 	
+	process_cleanup ();
+
 	sema_up(&curr -> sema_wait);
 	sema_up(&curr -> sema_fork);
-	sema_down(&curr -> sema_free);
+	sema_down(&curr -> sema_free);  
 }
 
 /* Free the current process's resources. */
@@ -835,6 +838,7 @@ lazy_load_segment (struct page *page, void *aux) {
 	/* TODO: 파일에서 세그먼트 로드 */
 	/* TODO: 주소 VA에서 첫 번째 페이지 오류가 발생했을 때 호출됩니다. */
 	/* TODO: 이 함수를 호출할 때 VA를 사용할 수 있습니다. */
+	
 	struct file *file = ((struct container*)aux)->file;
 	off_t offset = ((struct container*)aux)->offset;
 	size_t page_read_bytes = ((struct container*)aux)->page_read_bytes;
@@ -850,6 +854,7 @@ lazy_load_segment (struct page *page, void *aux) {
 	}
 	/* 만약 1페이지 못 되게 받아왔다면 남는 데이터를 0으로 초기화한다. */
 	memset(page->frame->kva + page_read_bytes, 0, page_zero_bytes); 
+	
 	
 	return true;
 }

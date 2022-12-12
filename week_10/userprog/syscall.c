@@ -39,7 +39,7 @@ int wait_syscall (pid_t pid);
 void check_valid_buffer(void* buffer, unsigned size, void* rsp, bool to_write);
 void *mmap_syscall (void *addr, size_t length, int writable, int fd, off_t offset);
 void munmap_syscall(void *addr);
-
+ 
 /* System call.
  *
  * Previously system call services was handled by the interrupt_syscall
@@ -76,8 +76,9 @@ check_address (const uint64_t *addr)
 
 int 
 add_file_to_fd_table (struct file *file){
-	int fd = 2;
+	
 	struct thread *t = thread_current();
+	int fd = t->fdidx;
 	while(t->file_descriptor_table[fd] != NULL && fd < MAX_FD_NUM)
 	{
 		fd++;
@@ -85,6 +86,7 @@ add_file_to_fd_table (struct file *file){
 	if (fd >= MAX_FD_NUM){
 		return -1;
 	}
+	t->fdidx = fd;
 	t->file_descriptor_table[fd] = file;
 	return fd;
 }
@@ -155,9 +157,9 @@ syscall_init (void) {
 void
 syscall_handler (struct intr_frame *f UNUSED) {
 	// TODO: Your implementation goes here.
-	#ifdef VM
-		thread_current()->rsp_stack = f->rsp; // syscall을 호출한 유저 프로그램의 유저 스택 포인터
-	#endif 
+	
+	thread_current()->rsp_stack = f->rsp; // syscall을 호출한 유저 프로그램의 유저 스택 포인터
+
 	uint64_t syscall_no = f->R.rax;  // 콜 넘버
 
 
@@ -260,6 +262,7 @@ syscall_handler (struct intr_frame *f UNUSED) {
 // 프로세스 종료 시스템 콜
 void
 exit_syscall (int status) {
+	
 	struct thread *t = thread_current();
 	t->exit_status = status;	//해당 종료 상태값을 스레드에 저장
 	
@@ -277,13 +280,13 @@ fork_syscall(const char *thread_name, struct intr_frame *f){
 bool
 create_syscall (char *file, unsigned initial_size) {
 	check_address(file);
-	if (!(&thread_current()->pml4) || !spt_find_page(&thread_current()->spt, file)){
-		exit_syscall(-1);
+	if (file)
+	{
+		return filesys_create (file, initial_size);
 	}
-	// lock_acquire(&filesys_lock);	//file 관련 함수를 호출 시 동시성 보장을 위해 락을 요청 
-	bool return_value = filesys_create(file, initial_size);
-	// lock_release(&filesys_lock);
-	return return_value;
+	else{
+    	exit_syscall(-1);
+    }
 }
  
 bool
@@ -349,10 +352,12 @@ write_syscall (int fd, const void *buffer, unsigned size){
 
 int
 open_syscall (const char *file) {
-	
+
 	check_address(file);
-	if (!(&thread_current()->pml4) || !spt_find_page(&thread_current()->spt, file)){
-		exit_syscall(-1);
+	if (file == NULL){
+		
+		return -1;
+		// exit_syscall(-1);
 	}
 	
 	lock_acquire(&filesys_lock);     
@@ -360,13 +365,12 @@ open_syscall (const char *file) {
 	lock_release(&filesys_lock);
 	/*rox*/
 	if (strcmp(thread_current()->name, file) == 0){
+		
 		file_deny_write (open_file); 
 	}
 	
-	
 	if(open_file == NULL){
 		return -1;
-		// exit_syscall(-1);
 	} 
 
 	int fd = add_file_to_fd_table(open_file); // 만들어진 파일을 스레드 안에 fd테이블에 저장
@@ -401,8 +405,8 @@ read_syscall (int fd, void *buffer, unsigned size) {
 	struct file *fileobj = fd_to_struct_filep(fd);
 
 	if (fileobj == NULL){
-		exit_syscall(-1);
-		// return -1;
+		// exit_syscall(-1);
+		return -1;
 	}
 
 	if (fd == STDOUT_FILENO){
@@ -446,14 +450,18 @@ close_syscall (int fd) {
 	
 	struct file *close_file = fd_to_struct_filep(fd);
 	if (close_file == NULL){
-		exit_syscall(-1);
-		// return -1;
+		return;
 	}
 
-	// lock_acquire(&filesys_lock);
+	if (fd < 0 || fd >= MAX_FD_NUM)
+		return;
+	
+	thread_current() -> file_descriptor_table[fd] = NULL;
+
+	lock_acquire(&filesys_lock);
 	file_close(close_file);
-	// lock_release(&filesys_lock);
-	remove_file_from_fd_table(fd);
+	lock_release(&filesys_lock);
+	// remove_file_from_fd_table(fd);
 }
 
 int
@@ -464,11 +472,6 @@ wait_syscall (pid_t pid) {
 
 void *
 mmap_syscall (void *addr, size_t length, int writable, int fd, off_t offset) {
-	struct file *file = fd_to_struct_filep(fd);
-	
-	// check_address(addr);
-	if (file == NULL)
-		return NULL;
 	
 	/* 파일의 시작점도 페이지 정렬 */
 	if (offset % PGSIZE != 0) {
@@ -479,6 +482,9 @@ mmap_syscall (void *addr, size_t length, int writable, int fd, off_t offset) {
 	if (pg_round_down(addr) != addr || is_kernel_vaddr(addr))
 		return NULL;
 
+	if (fd == 0 || fd == 1){
+		exit_syscall(-1);
+	}
 	/*  if the range of pages mapped overlaps any existing set of mapped pages */
 	if (spt_find_page(&thread_current()->spt, addr))
 		return NULL;
@@ -488,10 +494,15 @@ mmap_syscall (void *addr, size_t length, int writable, int fd, off_t offset) {
 		return NULL;
 	
 	/* file descriptors representing console input and output are not mappable */
-	if (fd == 0 || fd == 1){
-		exit_syscall(-1);
-	}
-	return do_mmap(addr, length, writable, file, offset);
+	struct file *file = fd_to_struct_filep(fd);
+	
+	// check_address(addr);
+	if (file == NULL)
+		return NULL;
+	
+	void *ret = do_mmap(addr, length, writable, file, offset);
+	
+	return ret;
 }
 
 void 

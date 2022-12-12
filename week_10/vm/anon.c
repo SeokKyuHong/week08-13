@@ -38,16 +38,16 @@ anon_initializer (struct page *page, enum vm_type type, void *kva) {
 	/* Set up the handler */
 	/* page struct 안의 Union 영역은 현재 uninit page이다.
 	   ANON page를 초기화해주기 위해 해당 데이터를 모두 0으로 초기화*/
-	struct uninit_page * uninit = &page -> uninit;
-	memset (uninit, 0, sizeof(struct uninit_page));
+	// struct uninit_page * uninit = &page -> uninit;
+	// memset (uninit, 0, sizeof(struct uninit_page));
 	
 	//해당 페이지는 ANON이므로 operations도 anon으로 지정
 	page->operations = &anon_ops;
 
 	struct anon_page *anon_page = &page->anon;
-	anon_page->swap_index = -1; // -1로 초기화 
+	// anon_page->swap_index = -1; // -1로 초기화 
 	
-	return true;
+	// return true;
 }
 
 /* Swap in the page by read contents from the swap disk. */

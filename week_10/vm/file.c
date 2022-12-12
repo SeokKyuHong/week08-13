@@ -22,7 +22,7 @@ static const struct page_operations file_ops = {
 void
 vm_file_init (void) {
 	// list_init(&mmap_file_list);
-} 
+}
 
 /* Initialize the file backed page */
 bool
@@ -44,15 +44,15 @@ file_backed_swap_in (struct page *page, void *kva) {
 	struct file *file = aux->file;
 	off_t offset = aux->offset;
 	size_t page_read_bytes = aux->page_read_bytes;
-	size_t page_zero_bytes = PGSIZE - page_read_bytes;
-
+	// size_t page_zero_bytes = PGSIZE - page_read_bytes;
+	
 	file_seek (file, offset);
 
 	if(file_read(file, kva, page_read_bytes) != (int)page_read_bytes) {
 		return false;
 	}
 
-	memset(kva + page_read_bytes, 0, page_zero_bytes);
+	memset(kva + page_read_bytes, 0, PGSIZE - page_read_bytes);
 
 	return true;	
 }
@@ -83,29 +83,29 @@ file_backed_swap_out (struct page *page) {
 static void
 file_backed_destroy (struct page *page) {
 	struct file_page *file_page UNUSED = &page->file;
-	if (page == NULL)
-		return false;
+	// if (page == NULL)
+	// 	return false;
 	
-	struct container* container = (struct container *)page->uninit.aux;
+	// struct container* container = (struct container *)page->uninit.aux;
 
-	/* 수정된 페이지(더티 비트 1)는 파일에 업데이트 해 놓는다. 
-		그리고 더티 비트를 0으로 만들어둔다. */
-	if (pml4_is_dirty(thread_current()->pml4, page->va)){
-		file_write_at(container->file, page->va, 
-			container->page_read_bytes, container->offset);
-		pml4_set_dirty(thread_current()->pml4, page->va, 0);
-	}
+	// /* 수정된 페이지(더티 비트 1)는 파일에 업데이트 해 놓는다. 
+	// 	그리고 더티 비트를 0으로 만들어둔다. */
+	// if (pml4_is_dirty(thread_current()->pml4, page->va)){
+	// 	file_write_at(container->file, page->va, 
+	// 		container->page_read_bytes, container->offset);
+	// 	pml4_set_dirty(thread_current()->pml4, page->va, 0);
+	// }
 
-	/* present bit을 0으로 만든다. */
-	pml4_clear_page(thread_current()->pml4, page->va);
+	// /* present bit을 0으로 만든다. */
+	// pml4_clear_page(thread_current()->pml4, page->va);
 }
 
 /* Do the mmap */
 void *
 do_mmap (void *addr, size_t length, int writable,
 		struct file *file, off_t offset) {
-	
 	struct file *mfile = file_reopen(file);
+	// printf("****######@@#@##!#!#!#!#!#!#!#!\n");
 	
 	void * start_addr = addr;
 	size_t read_bytes = length > file_length(file) ? file_length(file) : length;
@@ -124,7 +124,6 @@ do_mmap (void *addr, size_t length, int writable,
 		container->page_read_bytes = page_read_bytes;
 
 		if (!vm_alloc_page_with_initializer (VM_FILE, addr, writable, lazy_load_segment, container)) {
-			
 			return NULL;
     	}
 		
@@ -132,9 +131,9 @@ do_mmap (void *addr, size_t length, int writable,
 		zero_bytes -= page_zero_bytes;
 		addr       += PGSIZE;
 		offset     += page_read_bytes;
-		// printf("*******addr*********: %p\n", addr);
+		
 	}
-	
+	// printf("*******addr*********: %p\n", start_addr);
 	return start_addr;
 }
 

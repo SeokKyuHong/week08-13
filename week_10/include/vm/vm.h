@@ -61,8 +61,8 @@ struct page {
 	/* Your implementation */
 	struct hash_elem hash_elem;
 	bool writable;
-	size_t page_cnt; 
-	enum vm_type vm_type;
+	// size_t page_cnt; 
+	// enum vm_type vm_type;
 
 	/* Per-type data are binded into the union.
 	 * Each function automatically detects the current union */
@@ -112,8 +112,6 @@ struct page_operations {
 struct supplemental_page_table {
 	//뭐가 필요할까
 	struct hash hashs;
-	struct page *page_table;
-	struct frame *frame_table;
 
 };
 
@@ -144,5 +142,7 @@ unsigned page_hash (const struct hash_elem *e, void *aux);
 bool page_less (const struct hash_elem *a, 
 	const struct hash_elem *b, void *aux);
 static void vm_stack_growth (void *addr UNUSED);
+static bool setup_stack (struct intr_frame *if_);
+void spt_destructor(struct hash_elem *e, void *aux);
 
 #endif  /* VM_VM_H */
