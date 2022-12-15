@@ -835,9 +835,6 @@ lazy_load_segment (struct page *page, void *aux) {
 	/* TODO: Load the segment from the file */
 	/* TODO: This called when the first page fault occurs on address VA. */
 	/* TODO: VA is available when calling this function. */
-	/* TODO: 파일에서 세그먼트 로드 */
-	/* TODO: 주소 VA에서 첫 번째 페이지 오류가 발생했을 때 호출됩니다. */
-	/* TODO: 이 함수를 호출할 때 VA를 사용할 수 있습니다. */
 	
 	struct file *file = ((struct container*)aux)->file;
 	off_t offset = ((struct container*)aux)->offset;
@@ -854,7 +851,6 @@ lazy_load_segment (struct page *page, void *aux) {
 	}
 	/* 만약 1페이지 못 되게 받아왔다면 남는 데이터를 0으로 초기화한다. */
 	memset(page->frame->kva + page_read_bytes, 0, page_zero_bytes); 
-	
 	
 	return true;
 }
@@ -931,9 +927,6 @@ setup_stack (struct intr_frame *if_) {
 	 * TODO: If success, set the rsp accordingly.
 	 * TODO: You should mark the page is stack. */
 	/* TODO: Your code goes here */
-	/* TODO: stack_bottom에 스택을 매핑하고 즉시 페이지를 요청합니다.
-	* TODO: 성공하면 그에 따라 rsp를 설정합니다.
-	* TODO: 페이지가 스택임을 표시해야 합니다. */	
 	if (vm_alloc_page(VM_ANON | VM_MARKER_0, stack_bottom, 1)) {
 		success = vm_claim_page(stack_bottom);
 
