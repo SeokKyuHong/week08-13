@@ -236,10 +236,9 @@ vm_get_frame(void)
 
 /* Growing the stack. */
 static void
-vm_stack_growth (void *addr UNUSED) {
+vm_stack_growth(void *addr UNUSED) {
 	//스택에 해당하는 ANON 페이지를 UNINIT으로 만들고 SPT에 넣어줌
 	//이후 claim해서 물리메모리와 매핑
-	
 	if (vm_alloc_page(VM_ANON | VM_MARKER_0, addr, 1)){
 		vm_claim_page(addr);
 		thread_current() -> stack_bottom -= PGSIZE;
@@ -262,19 +261,20 @@ vm_try_handle_fault (struct intr_frame *f UNUSED, void *addr UNUSED,
 	/* TODO: Validate the fault */
 	/* TODO: Your code goes here */
 	//유저 가상 메모리 안의 페이지가 아니라면 리턴
-	// Step 1. Locate the page that faulted in the supplemental page table
+	// Locate the page that faulted in the supplemental page table
 	if (is_kernel_vaddr(addr)) {
         return false;
 	}
 
+	/* 페이지 폴트가 커널 영역에서 났는지, 유저 영역에서 났는지 확인!*/
     void *rsp_stack = is_kernel_vaddr(f->rsp) ? thread_current()->rsp_stack : f->rsp;
     if (not_present){
         if (!vm_claim_page(addr)) {
+			/* Page fault 발생 주소가 유저 스택 내에 있고, 스택 포인터보다 8바이트 밑에 있지 않으면 */
             if (rsp_stack - 8 <= addr && USER_STACK - 0x100000 <= addr && addr <= USER_STACK) {
                 vm_stack_growth(thread_current()->stack_bottom - PGSIZE);
                 return true;
             }
-			// printf("******22222************\n");
             return false;
         }
         else
@@ -300,9 +300,9 @@ vm_claim_page (void *va UNUSED) {
 	// struct thread *t = thread_current();
 	/* TODO: Fill this function */
 	page = spt_find_page(&thread_current()->spt, va);
-	// printf("&&&&&&&&&&&&%p\n",page);
+
 	if (page == NULL){ 
-		// printf("*****************#$######\n");
+
 		return false;
 	}
 	return vm_do_claim_page (page);
@@ -413,36 +413,16 @@ setup_stack (struct intr_frame *if_) {
 	 * TODO: If success, set the rsp accordingly.
 	 * TODO: You should mark the page is stack. */
 	/* TODO: Your code goes here */
-	/* TODO: stack_bottom에 스택을 매핑하고 즉시 페이지를 요청합니다.
-	* TODO: 성공하면 그에 따라 rsp를 설정합니다.
-	* TODO: 페이지가 스택임을 표시해야 합니다. */	
 
 	bool success = false;
 	void *stack_bottom = (void *) (((uint8_t *) USER_STACK) - PGSIZE);
 	if (vm_alloc_page(VM_ANON | VM_MARKER_0, stack_bottom, 1)) {
 		success = vm_claim_page(stack_bottom);
-
 		if (success){
-			
 			if_->rsp = USER_STACK;
 			thread_current()->stack_bottom = stack_bottom;
 		}
 	}
-
-	// uint8_t *kpage;
-	// bool success = false;
-	// void *stack_bottom = (void *) (((uint8_t *) USER_STACK) - PGSIZE);
-	// kpage = palloc_get_page(PAL_USER | PAL_ZERO);
-	// if (kpage != NULL)
-	// {
-	// 	success = install_page(((uint8_t *)USER_STACK) - PGSIZE, kpage, true);
-	// 	if (success){
-	// 		if_->rsp = USER_STACK;
-	// 		thread_current()->stack_bottom = stack_bottom;
-	// 	}
-	// 	else
-	// 		palloc_free_page(kpage); 
-	// }
 		
 	return success;
 }

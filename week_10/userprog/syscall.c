@@ -64,13 +64,13 @@ check_address (const uint64_t *addr)
 	
 	struct thread *cur = thread_current();
 	//유저영역의 주소가 아니거나, 물리주소와 맵핑되어 있는 페이지가 없다면 프로세스를 종료 시킨다.
-	// || addr == NULL || !spt_find_page(&cur->spt, addr) || !(&cur->pml4)
 	if (is_kernel_vaddr(addr) || addr == NULL)
 	{
 		
 		exit_syscall(-1);
 	}
 
+	//유저 주소라면 stp에서 페이지를 찾는다. 
 	return spt_find_page(&cur->spt, addr);
 }
 
@@ -124,11 +124,6 @@ check_valid_buffer(void* buffer, unsigned size, void* rsp, bool to_write){
 		/* write 시스템 콜을 호출했는데 이 페이지가 쓰기가 허용된 페이지가 아닌 경우 */
 		if(to_write == true && page->writable == false)
 			exit_syscall(-1);
-
-		// #ifdef VM
-		// 	if (thread_current()->pml4 == &page->frame)
-		// 		exit_syscall(-1);
-		// #endif
 
 	}
 
@@ -241,7 +236,6 @@ syscall_handler (struct intr_frame *f UNUSED) {
 			break;
 
 		case SYS_MMAP :
-			// check_valid_buffer(f->R.rsi, f->R.rdx, f->rsp, 0);
 			f->R.rax = mmap_syscall(f->R.rdi, f->R.rsi, f->R.rdx, f->R.r10, f->R.r8);
 			break;
 

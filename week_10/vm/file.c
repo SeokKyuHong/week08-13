@@ -104,8 +104,9 @@ file_backed_destroy (struct page *page) {
 void *
 do_mmap (void *addr, size_t length, int writable,
 		struct file *file, off_t offset) {
+
+	// 파일과 동일한 inode의 새 파일을 연다. 
 	struct file *mfile = file_reopen(file);
-	// printf("****######@@#@##!#!#!#!#!#!#!#!\n");
 	
 	void * start_addr = addr;
 	size_t read_bytes = length > file_length(file) ? file_length(file) : length;
@@ -133,7 +134,6 @@ do_mmap (void *addr, size_t length, int writable,
 		offset     += page_read_bytes;
 		
 	}
-	// printf("*******addr*********: %p\n", start_addr);
 	return start_addr;
 }
 
